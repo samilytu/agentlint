@@ -219,6 +219,18 @@
     background-size: 24px 24px;
   }
 
+  .animate-thinking-dot-1 {
+    animation: thinking-dots 1.4s infinite 0s;
+  }
+
+  .animate-thinking-dot-2 {
+    animation: thinking-dots 1.4s infinite 0.2s;
+  }
+
+  .animate-thinking-dot-3 {
+    animation: thinking-dots 1.4s infinite 0.4s;
+  }
+
   .score-ring {
     transition: stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
