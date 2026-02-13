@@ -19,6 +19,10 @@
 
 # production
 /build
+/test-results
+/playwright-report
+sqlite.db
+sqlite.db-*
 
 # misc
 .DS_Store
@@ -32,6 +36,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
