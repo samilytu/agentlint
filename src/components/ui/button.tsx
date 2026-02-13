@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[0_12px_28px_-20px_color-mix(in_oklch,var(--primary),black_35%)] hover:translate-y-[-1px] hover:bg-primary/92",
+          "bg-primary text-primary-foreground shadow-[0_8px_24px_-12px_color-mix(in_oklch,var(--primary),transparent_30%)] hover:translate-y-[-1px] hover:brightness-110 hover:shadow-[0_12px_32px_-12px_color-mix(in_oklch,var(--primary),transparent_20%)] active:translate-y-0",
         destructive:
-          "bg-destructive text-white hover:translate-y-[-1px] hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-destructive text-white shadow-[0_8px_24px_-12px_color-mix(in_oklch,var(--destructive),transparent_40%)] hover:translate-y-[-1px] hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
-          "border border-border/80 bg-background/80 shadow-[0_8px_28px_-24px_color-mix(in_oklch,var(--foreground),transparent_30%)] backdrop-blur hover:border-primary/40 hover:bg-background",
+          "border border-border/70 bg-background/70 backdrop-blur-sm hover:border-primary/50 hover:bg-background/90 hover:shadow-[0_0_20px_-8px_color-mix(in_oklch,var(--primary),transparent_70%)]",
         secondary:
           "bg-secondary text-secondary-foreground hover:translate-y-[-1px] hover:bg-secondary/86",
         ghost:
-          "hover:bg-secondary/70 hover:text-foreground dark:hover:bg-accent/50",
+          "hover:bg-secondary/70 hover:text-foreground dark:hover:bg-muted/60",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
