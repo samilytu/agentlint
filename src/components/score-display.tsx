@@ -6,6 +6,7 @@ import { CircleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ScoreData = {
   score: number;
@@ -21,6 +22,7 @@ type ScoreData = {
 
 type ScoreDisplayProps = {
   data: ScoreData | null;
+  isLoading?: boolean;
 };
 
 function ScoreGauge({ score }: { score: number }) {
@@ -87,7 +89,36 @@ function DimensionBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function ScoreDisplay({ data }: ScoreDisplayProps) {
+export function ScoreDisplay({ data, isLoading }: ScoreDisplayProps) {
+  if (isLoading) {
+    return (
+      <div className="grid gap-5 sm:grid-cols-[auto_1fr]">
+        <div className="flex flex-col items-center gap-2">
+          <Skeleton className="size-[140px] rounded-full" />
+          <Skeleton className="h-5 w-14" />
+        </div>
+        <div className="flex flex-col gap-4">
+          <div className="grid gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-8" />
+                </div>
+                <Skeleton className="h-1.5 w-full" />
+              </div>
+            ))}
+          </div>
+          <Separator className="bg-border/40" />
+          <div>
+            <Skeleton className="mb-2 h-3 w-24" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-border/40 bg-background/40 p-8 text-center">

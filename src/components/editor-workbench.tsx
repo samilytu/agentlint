@@ -147,7 +147,7 @@ export function EditorWorkbench() {
 
       <section className="grid gap-4 xl:grid-cols-2">
         <InputPanel value={input} onChange={setInput} />
-        <OutputPanel value={output} />
+        <OutputPanel value={output} isLoading={analyzeMutation.isPending} />
       </section>
 
       <Card className="panel-glow border-border/50 bg-card/75">
@@ -164,6 +164,7 @@ export function EditorWorkbench() {
             isPending={analyzeMutation.isPending}
             hasOutput={output.length > 0}
             inputLength={input.length}
+            isOverLimit={input.length > 1_000_000}
             errorMessage={analyzeMutation.error?.message ?? null}
             onAnalyze={onAnalyze}
             onApplyFix={onApplyFix}
@@ -171,7 +172,7 @@ export function EditorWorkbench() {
             onExport={onExport}
           />
           <Separator className="bg-border/30" />
-          <ScoreDisplay data={scoreData} />
+          <ScoreDisplay data={scoreData} isLoading={analyzeMutation.isPending} />
         </CardContent>
       </Card>
 
