@@ -6,12 +6,12 @@ import { z } from "zod";
 import type { ArtifactType } from "@/lib/artifacts";
 
 const aiJudgeSchema = z.object({
-  score: z.number().int().min(0).max(100),
+  score: z.number().min(0).max(100).transform((value) => Math.round(value)),
   dimensions: z.object({
-    clarity: z.number().int().min(0).max(100),
-    safety: z.number().int().min(0).max(100),
-    tokenEfficiency: z.number().int().min(0).max(100),
-    completeness: z.number().int().min(0).max(100),
+    clarity: z.number().min(0).max(100).transform((value) => Math.round(value)),
+    safety: z.number().min(0).max(100).transform((value) => Math.round(value)),
+    tokenEfficiency: z.number().min(0).max(100).transform((value) => Math.round(value)),
+    completeness: z.number().min(0).max(100).transform((value) => Math.round(value)),
   }),
   rationale: z.string().min(1),
   warnings: z.array(z.string()).default([]),
@@ -33,8 +33,44 @@ function parseJsonResult(raw: string): AIJudgeResult {
     .replace(/```$/i, "")
     .trim();
 
-  const parsed = JSON.parse(cleaned);
-  return aiJudgeSchema.parse(parsed);
+  const firstBraceIndex = cleaned.indexOf("{");
+  const lastBraceIndex = cleaned.lastIndexOf("}");
+
+  const candidates = [cleaned];
+  if (firstBraceIndex !== -1 && lastBraceIndex > firstBraceIndex) {
+    candidates.push(cleaned.slice(firstBraceIndex, lastBraceIndex + 1));
+  }
+
+  let lastError: unknown = null;
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      return aiJudgeSchema.parse(parsed);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  const message =
+    lastError instanceof Error ? lastError.message : "Unknown JSON parsing error";
+  throw new Error(`Failed to parse judge JSON response: ${message}`);
+}
+
+const GEMINI_MAX_RETRIES = 3;
+const GEMINI_INITIAL_DELAY_MS = 2_000;
+
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRateLimitError(error: unknown): boolean {
+  if (typeof error === "object" && error !== null && "status" in error) {
+    return (error as { status: number }).status === 429;
+  }
+  if (error instanceof Error && error.message.includes("429")) {
+    return true;
+  }
+  return false;
 }
 
 function buildUserPrompt(input: ProviderInput) {
@@ -149,16 +185,49 @@ export async function runGeminiJudge(input: ProviderInput): Promise<AIJudgeResul
     buildUserPrompt(input),
   ].join("\n");
 
-  const response = await client.models.generateContent({
-    model,
-    contents: prompt,
-    config: {
-      temperature: 0.1,
-      maxOutputTokens: 1600,
-    },
-  });
+  let raw = "";
+  let lastError: unknown = null;
 
-  const raw = response.text ?? "";
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
+    try {
+      const response = await client.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          temperature: 0.1,
+          maxOutputTokens: 4096,
+          responseMimeType: "application/json",
+        },
+      });
+
+      raw = response.text ?? "";
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+
+      if (isRateLimitError(error) && attempt < GEMINI_MAX_RETRIES) {
+        const delayMs = GEMINI_INITIAL_DELAY_MS * Math.pow(2, attempt);
+        console.warn(
+          `Gemini 429 rate-limited (attempt ${attempt + 1}/${GEMINI_MAX_RETRIES + 1}), retrying in ${delayMs}ms...`,
+        );
+        await sleep(delayMs);
+        continue;
+      }
+
+      const status =
+        typeof error === "object" && error !== null && "status" in error
+          ? ` [${(error as { status: number }).status}]`
+          : "";
+      const message = error instanceof Error ? error.message : "Unknown Gemini error";
+      throw new Error(`Gemini judge request failed${status}: ${message}`);
+    }
+  }
+
+  if (lastError) {
+    const message = lastError instanceof Error ? lastError.message : "Unknown Gemini error";
+    throw new Error(`Gemini judge request failed after retries: ${message}`);
+  }
 
   if (raw.trim().length === 0) {
     throw new Error("Gemini returned empty output");

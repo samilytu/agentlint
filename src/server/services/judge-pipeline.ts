@@ -26,7 +26,7 @@ export async function runJudgePipeline(
   input: JudgePipelineInput,
 ): Promise<JudgePipelineOutput> {
   const systemPrompt = judgeSystemPrompts[input.type];
-  const provider = (process.env.LLM_PROVIDER ?? "mock").toLowerCase();
+  const provider = (process.env.LLM_PROVIDER ?? "gemini").toLowerCase();
 
   if (provider === "openai") {
     try {
@@ -41,7 +41,8 @@ export async function runJudgePipeline(
         systemPrompt,
         result,
       };
-    } catch {
+    } catch (error) {
+      console.error("OpenAI judge failed, falling back to mock", error);
       const fallback = runMockJudge(input);
 
       return {
@@ -71,7 +72,8 @@ export async function runJudgePipeline(
         systemPrompt,
         result,
       };
-    } catch {
+    } catch (error) {
+      console.error("Anthropic judge failed, falling back to mock", error);
       const fallback = runMockJudge(input);
 
       return {
@@ -101,7 +103,8 @@ export async function runJudgePipeline(
         systemPrompt,
         result,
       };
-    } catch {
+    } catch (error) {
+      console.error("Gemini judge failed, falling back to mock", error);
       const fallback = runMockJudge(input);
 
       return {
