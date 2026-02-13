@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type ScanItem = {
@@ -30,7 +29,7 @@ export function RecentScans({ scans, isLoading }: RecentScansProps) {
     <Card className="panel-glow border-border/50 bg-card/75">
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <div>
-          <CardTitle className="text-sm font-semibold uppercase tracking-[0.1em] font-[family-name:var(--font-display)]">
+          <CardTitle className="text-sm font-semibold uppercase tracking-widest font-display">
             Recent Scans
           </CardTitle>
           <CardDescription className="text-xs">
@@ -54,7 +53,7 @@ export function RecentScans({ scans, isLoading }: RecentScansProps) {
             ))}
           </div>
         ) : scans && scans.length > 0 ? (
-          <ScrollArea className="max-h-56">
+          <div className="max-h-56 overflow-y-auto">
             <ul className="grid gap-2 text-sm">
               {scans.map((scan) => (
                 <li
@@ -79,7 +78,7 @@ export function RecentScans({ scans, isLoading }: RecentScansProps) {
                 </li>
               ))}
             </ul>
-          </ScrollArea>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground/60 italic">No scans yet.</p>
         )}
