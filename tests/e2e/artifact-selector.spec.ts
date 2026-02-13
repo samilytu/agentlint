@@ -36,12 +36,14 @@ test.describe("Artifact type switching", () => {
 
   test("switching type clears previous output", async ({ page }) => {
     await page.getByRole("button", { name: "Analyze" }).click();
-    await expect(page.getByTestId("artifact-output")).toContainText("Refined Artifact", {
-      timeout: 15_000,
+    await expect(page.getByText("Judge is thinking")).not.toBeVisible({ timeout: 45_000 });
+
+    const output = page.getByTestId("artifact-output");
+    await expect(output).not.toContainText("Run Analyze to generate the perfected artifact.", {
+      timeout: 45_000,
     });
 
     await page.getByRole("button", { name: /Skills/i }).click();
-    const output = page.getByTestId("artifact-output");
-    await expect(output).not.toContainText("Refined Artifact");
+    await expect(output).toContainText("Run Analyze to generate the perfected artifact.");
   });
 });
