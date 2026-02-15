@@ -47,6 +47,15 @@ describe("MCP auth scope enforcement", () => {
 
       await expect(
         client.callTool({
+          name: "prepare_artifact_fix_context",
+          arguments: {
+            type: "rules",
+          },
+        }),
+      ).rejects.toBeTruthy();
+
+      await expect(
+        client.callTool({
           name: "analyze_artifact",
           arguments: {
             type: "agents",
@@ -61,6 +70,21 @@ describe("MCP auth scope enforcement", () => {
           arguments: {
             type: "rules",
             content: "# Rules\n\nNever expose secrets.",
+          },
+        }),
+      ).rejects.toBeTruthy();
+
+      await expect(
+        client.callTool({
+          name: "submit_client_assessment",
+          arguments: {
+            type: "rules",
+            content: "# Rules\n\nNever expose secrets.",
+            assessment: {
+              repositoryScanSummary: "Scanned rules files.",
+              metricScores: [{ metric: "clarity", score: 80 }],
+              metricEvidence: [{ metric: "clarity", citations: [{ snippet: "Evidence" }] }],
+            },
           },
         }),
       ).rejects.toBeTruthy();
