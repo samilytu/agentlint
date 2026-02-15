@@ -20,6 +20,9 @@ Bu dizindeki yol haritasi dokumanlari:
 6. `docs/mcp_remote_runbook.md`
    - Public remote MCP deploy ve go-live runbook
 
+7. `docs/mcp_client_conventions.md`
+   - Client tarafinda auto-invoke kalitesini arttiran MCP convention'lari
+
 Temel kaynaklar:
 - `AGENTS.md`
 - `docs/PRD.md`

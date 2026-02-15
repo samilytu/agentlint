@@ -15,6 +15,7 @@ Minimum:
 ```env
 MCP_HTTP_HOST=0.0.0.0
 MCP_HTTP_PORT=3333
+MCP_HTTP_STATELESS=false
 MCP_PUBLIC_BASE_URL=https://your-domain.example.com
 MCP_REQUIRE_AUTH=true
 MCP_BEARER_TOKENS=friend1=token-1:*;friend2=token-2:analyze,validate
@@ -26,6 +27,7 @@ MCP_REQUEST_TIMEOUT_MS=30000
 MCP_MAX_CONCURRENT_REQUESTS=64
 MCP_SESSION_TTL_MS=1800000
 MCP_SESSION_SWEEP_INTERVAL_MS=60000
+MCP_ALLOWED_HOSTS=your-domain.example.com
 ```
 
 Opsiyonel OAuth metadata:
@@ -57,9 +59,16 @@ npm run mcp:http
 
 - `GET /healthz` 200
 - `GET /readyz` 200
+- `GET /readyz` payloadinda `capabilities.resources=true` ve `advertisedToolNames` icinde `quality_gate_artifact` gorunuyor
 - MCP initialize + listTools + callTool akisi basarili
 - Unauthorized request 401 donuyor
 - Scope ihlali 403 donuyor
+
+If your client fails with missing session id errors, enable stateless compatibility:
+
+```env
+MCP_HTTP_STATELESS=true
+```
 
 ## 5) Client Connector Example
 
@@ -74,6 +83,26 @@ Auth header:
 ```text
 Authorization: Bearer <token>
 ```
+
+MCP capabilities now exposed:
+
+- Tools
+- Prompts (`artifact_create_prompt`, `artifact_review_prompt`, `artifact_fix_prompt`)
+- Resources (`agentlint://quality-metrics/<type>`, `agentlint://prompt-pack/<type>`, `agentlint://prompt-template/<type>`, `agentlint://artifact-path-hints/<type>`, `agentlint://artifact-spec/<type>`)
+
+Recommended tool order for artifact tasks:
+
+1. `quality_gate_artifact`
+2. `analyze_artifact` or `analyze_context_bundle` (if additional diagnostics are needed)
+3. `validate_export`
+
+LLM-free MCP mode notes:
+
+- `analyze_artifact` and `analyze_context_bundle` are deterministic (no provider call in MCP path).
+- `refinedContent` mirrors sanitized input; final rewrites are expected from the MCP client LLM/editor.
+- `quality_gate_artifact` only applies patch merge when `candidateContent` is supplied.
+
+Note: `analyze_workspace_artifacts` is local-first and disabled in remote transport by default.
 
 ## 6) Monitoring
 

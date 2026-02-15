@@ -7,8 +7,10 @@ Ana baglam:
 - `docs/engineering_guardrails.md`
 - `AGENTS.md`
 
-Execution snapshot (2026-02-14):
+Execution snapshot (2026-02-15):
 - Completed: Faz 0, Faz 1, Faz 2, Faz 3, Faz 4 (v1), Faz 5 (v1), Faz 6
+- MCP path: deterministic LLM-free mode active
+- MCP remote transport: stateless compatibility hardening complete
 - Pending: Faz 7, Faz 8
 
 ---
@@ -260,14 +262,19 @@ Uygulanan dosyalar:
 - `src/mcp/http/session-store.ts`
 - `src/mcp/http/auth.ts`
 - `src/mcp/http/oauth-metadata.ts`
+- `src/mcp/prompts/register-prompts.ts`
+- `src/mcp/resources/register-resources.ts`
 - `src/mcp/types.ts`
 - `src/mcp/tools/analyze-artifact.ts`
 - `src/mcp/tools/analyze-context-bundle.ts`
+- `src/mcp/tools/quality-gate-artifact.ts`
+- `src/mcp/tools/analyze-workspace-artifacts.ts`
 - `src/mcp/tools/suggest-patch.ts`
 - `src/mcp/tools/validate-export.ts`
 - `src/mcp/tools/index.ts`
 - `src/server/services/context-bundle.ts`
 - `src/server/services/analyze-artifact-core.ts`
+- `src/server/services/analyze-artifact-mcp-core.ts`
 - `src/cli/index.ts`
 - `tests/integration/mcp-stdio.test.ts`
 - `tests/integration/mcp-http.test.ts`
@@ -280,25 +287,31 @@ Context7 referanslari:
 MCP tool set:
 - `analyze_artifact`
 - `analyze_context_bundle`
+- `quality_gate_artifact`
 - `suggest_patch`
 - `validate_export`
+- `analyze_workspace_artifacts` (local stdio)
 
 Adimlar:
 1. MCP server bootstrap (stdio) tamamlandi.
-2. Tool wrapper'lari ortak servis katmanina baglandi.
+2. Tool wrapper'lari MCP deterministic servis katmanina baglandi.
 3. Streamable HTTP endpoint + session store + health/readiness tamamlandi.
 4. Bearer auth + scope enforcement + rate limit + timeout/concurrency/body guard tamamlandi.
 5. CLI komutlari (`analyze`, `fix`, `score`) ortak tool katmanina baglandi.
+6. Prompt/resource capability eklendi (`registerPrompt`, `registerResource`).
+7. Auto-invoke convention icin policy-first server instructions ve tool aciklamalari guclendirildi.
 
 Guvenlik:
 - Varsayilan auth-required remote mod (`MCP_REQUIRE_AUTH=true`)
 - Tool bazli scope enforcement (`analyze`, `validate`, `patch`)
 - Session TTL cleanup + DNS rebinding protection (`createMcpExpressApp`)
 - OAuth metadata endpointleri ile production auth migration yolu
+- Remote modda workspace tarama varsayilan kapali; local stdio modunda acik
 
 Test:
 - MCP tool call contract testleri
 - CLI smoke testleri
+- Prompt ve resource list/read akislari
 
 Exit kriter:
 - IDE/agent tarafi local stdio ve remote streamable-http ile tool call edebiliyor

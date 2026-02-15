@@ -10,8 +10,10 @@ Bu dokuman Faz 6 icin teknik kontrati kilitler.
 - MCP tools:
   - `analyze_artifact`
   - `analyze_context_bundle`
+  - `quality_gate_artifact`
   - `suggest_patch`
   - `validate_export`
+  - `analyze_workspace_artifacts` (local stdio)
 - CLI komutlari:
   - `analyze`
   - `fix`
@@ -23,15 +25,19 @@ Bu dokuman Faz 6 icin teknik kontrati kilitler.
 - Tool wrappers: `src/mcp/tools/*.ts`
 - Local stdio entrypoint: `src/mcp/stdio.ts`
 - Remote HTTP entrypoint: `src/mcp/http/server.ts`
+- Prompt registry: `src/mcp/prompts/register-prompts.ts`
+- Resource registry: `src/mcp/resources/register-resources.ts`
 
 ## Shared Business Logic
 
 Duplicate logic engeli icin ortak analiz akisi:
 
-- `src/server/services/analyze-artifact-core.ts`
+- `src/server/services/analyze-artifact-core.ts` (Web/API + CLI provider-capable path)
+- `src/server/services/analyze-artifact-mcp-core.ts` (MCP deterministic LLM-free path)
 - `src/server/services/context-bundle.ts`
 
-Hem tRPC router hem MCP tool hem CLI ayni analiz cekirdegini kullanir.
+Web/API ve CLI path provider-capable cekirdegi kullanir.
+MCP tools deterministic cekirdegi kullanir.
 
 ## Remote Security Baseline
 
@@ -59,6 +65,16 @@ Gerekli issuer/token endpoint env degiskenleri eklendiginde metadata endpointi a
 - `tests/integration/mcp-http.test.ts`
 - `tests/integration/mcp-auth.test.ts`
 - `tests/integration/cli-smoke.test.ts`
+
+## Auto-Invoke Convention
+
+Server instructions and tool descriptions are intentionally policy-driven:
+
+1. `quality_gate_artifact`
+2. `analyze_artifact` / `analyze_context_bundle` (when deeper context diagnostics are needed)
+3. `validate_export`
+
+Prompt and resource capabilities are exposed to improve client-side selection behavior.
 
 ## Operational Scripts
 

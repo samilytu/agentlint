@@ -17,7 +17,7 @@ Ana referanslar:
 - `docs/phased_implementation_plan.md`
 - `docs/engineering_guardrails.md`
 
-## Execution Status Snapshot (2026-02-14)
+## Execution Status Snapshot (2026-02-15)
 
 Tamamlananlar:
 - [x] Task 0.1 - Analyze response metadata standardizasyonu
@@ -43,6 +43,7 @@ Tamamlananlar:
 
 Devam edenler:
 - [x] Faz 6 - MCP ve CLI backlog tasklari
+- [x] Faz 6.7 - MCP deterministic LLM-free migration
 - [ ] Faz 7 - Dynamic template, URL import, house rules backlog tasklari
 - [ ] Faz 8 - Refactor ve CI backlog tasklari
 
@@ -359,6 +360,60 @@ Uygulanan dosyalar:
 Sonuc:
 - Local + remote MCP kurulum adimlari dokumante edildi.
 - Go-live checklist ve registry metadata taslagi eklendi.
+
+### Task 6.6 - Auto-invoke convention, prompts/resources, quality gate
+Durum: [x] Completed
+
+Uygulanan dosyalar:
+- `src/mcp/core/create-server.ts`
+- `src/mcp/tools/quality-gate-artifact.ts`
+- `src/mcp/tools/analyze-workspace-artifacts.ts`
+- `src/mcp/prompts/register-prompts.ts`
+- `src/mcp/resources/register-resources.ts`
+- `docs/mcp_client_conventions.md`
+
+Sonuc:
+- Tool descriptions ve server instructions policy-first hale getirildi.
+- `quality_gate_artifact` ile tek-cagrida analyze->patch->validate akisi eklendi.
+- Prompt/resource capability eklendi; client tarafi guidance metinleri expose edildi.
+- Local stdio modunda workspace scan tool'u eklendi (`analyze_workspace_artifacts`).
+
+### Task 6.7 - MCP deterministic LLM-free migration
+Durum: [x] Completed
+
+Uygulanan dosyalar:
+- `src/server/services/analyze-artifact-mcp-core.ts`
+- `src/mcp/tools/analyze-artifact.ts`
+- `src/mcp/tools/analyze-context-bundle.ts`
+- `src/mcp/tools/analyze-workspace-artifacts.ts`
+- `src/mcp/tools/quality-gate-artifact.ts`
+- `src/mcp/types.ts`
+- `src/mcp/conventions/artifact-path-hints.ts`
+- `src/mcp/conventions/artifact-specs.ts`
+- `src/mcp/resources/register-resources.ts`
+- `tests/integration/mcp-stdio.test.ts`
+- `tests/integration/mcp-http.test.ts`
+
+Sonuc:
+- MCP path provider cagrilarindan ayrildi ve deterministic analiz moduna gecti.
+- `quality_gate_artifact` patch merge adimini sadece `candidateContent` verildiginde calistiriyor.
+- Yeni kaynaklar eklendi: `artifact-path-hints` ve `artifact-spec`.
+
+### Task 6.8 - Remote compatibility and runtime hardening
+Durum: [x] Completed
+
+Uygulanan dosyalar:
+- `src/mcp/http/server.ts`
+- `src/mcp/stdio.ts`
+- `tests/integration/mcp-http.test.ts`
+- `README.md`
+- `docs/mcp_remote_runbook.md`
+- `docs/mcp_client_conventions.md`
+
+Sonuc:
+- HTTP stateless compatibility request-bazli runtime ile sabitlendi.
+- `GET /readyz` capability/advertised metadata ile remote debug akisina acik hale getirildi.
+- MCP entrypoint'lerinde `.env` auto-load (`dotenv/config`) aktif edilerek env kaynakli startup hatalari giderildi.
 
 ---
 
