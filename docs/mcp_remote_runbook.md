@@ -20,6 +20,8 @@ MCP_PUBLIC_BASE_URL=https://your-domain.example.com
 MCP_REQUIRE_AUTH=true
 MCP_BEARER_TOKENS=friend1=token-1:*;friend2=token-2:analyze,validate
 MCP_ENFORCE_TOOL_SCOPES=true
+# Enable only if your deployment sits behind a trusted proxy and forwards real client IPs.
+MCP_TRUST_PROXY=false
 MCP_RATE_LIMIT_MAX_REQUESTS=120
 MCP_RATE_LIMIT_WINDOW_MS=60000
 MCP_MAX_BODY_BYTES=1000000

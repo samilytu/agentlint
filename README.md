@@ -1,56 +1,213 @@
 # Agent Lint
 
-Agent Lint evaluates and improves AI coding agent context artifacts:
+AI coding agents move fast. Agent Lint makes sure they move **safely, consistently, and measurably**.
 
+Agent Lint evaluates and improves AI-agent context artifacts such as:
+
+- `AGENTS.md` / `CLAUDE.md`
 - skills
-- AGENTS.md / CLAUDE.md
 - rules
 - workflows
 - plans
 
-## Stack
+It gives teams a practical quality layer for agent-driven development via:
 
-- Next.js App Router + TypeScript
-- Tailwind CSS v4 + shadcn/ui
-- tRPC + React Query
-- Drizzle ORM + SQLite
-- MCP server + CLI tooling
+- Web app
+- CLI
+- MCP server (`agentlint-local` stdio + `agentlint-remote` streamable HTTP)
+
+---
+
+## What Problem Does This Solve?
+
+Most teams adopting coding agents hit the same issues:
+
+- Context files drift over time and become inconsistent.
+- Different engineers (or agents) produce different quality levels.
+- "Looks good" reviews miss safety and export issues.
+- Teams cannot explain *why* one artifact is better than another.
+
+Agent Lint solves this by adding a reproducible quality workflow:
+
+- clear scoring dimensions
+- evidence-backed assessment
+- guardrail checks
+- repeatable improvement loops
+
+---
+
+## Who Is It For?
+
+- **Platform / DevEx teams** building organization-wide agent standards
+- **Engineering teams** scaling AI coding across multiple repos
+- **Consultancies / agencies** needing repeatable quality across clients
+- **Solo senior developers** who want strict quality gates before shipping prompts/rules/plans
+
+---
+
+## Without vs With Agent Lint
+
+| Without Agent Lint | With Agent Lint |
+|---|---|
+| "This looks okay" | Structured scoring + evidence |
+| Unclear quality bar | Explicit policy and target score |
+| Ad-hoc rewrites | Guided fix loop with required tool order |
+| Output-only review | Scoring transparency + guardrail breakdown |
+| Inconsistent team standards | Shared, codified artifact quality system |
+| Hidden export/safety risks | Final `validate_export` hard guardrail |
+
+---
+
+## Core Capabilities
+
+### 1) Web + API path
+
+- Input sanitization
+- Artifact-specific prompting
+- Multi-provider model execution (OpenAI/Anthropic/Gemini + fallback mock)
+- Export safety validation
+- Original/refined artifact storage + scoring
+
+### 2) CLI
+
+Local workflows for analyzing/fixing/scoring artifacts directly from terminal.
+
+### 3) MCP path (client-led weighted scoring)
+
+MCP clients (Cursor, Claude Desktop, VS Code-compatible tooling, Windsurf-like setups) can use Agent Lint as a quality orchestrator:
+
+- Client LLM does repository scanning and evidence collection.
+- Agent Lint MCP enforces scoring contract and guardrails.
+- Final score is hybrid:
+  - client weighted score: 90%
+  - server guardrail score: 10%
+
+---
+
+## Architecture Snapshot
+
+- **Frontend**: Next.js App Router + TypeScript
+- **Styling/UI**: Tailwind CSS v4 + shadcn/ui
+- **Backend**: tRPC + React Query
+- **Data**: Drizzle ORM + SQLite (libSQL-compatible)
+- **MCP**: `@modelcontextprotocol/sdk` (stdio + streamable HTTP)
+
+---
+
+## MCP: How `agentlint-remote` Works
+
+Remote MCP endpoint (default local):
+
+`http://127.0.0.1:3333/mcp`
+
+Health/readiness:
+
+- `GET /healthz`
+- `GET /readyz`
+
+Optional OAuth metadata:
+
+- `GET /.well-known/oauth-protected-resource`
+- `GET /.well-known/oauth-authorization-server`
+
+Authentication:
+
+- `Authorization: Bearer <token>`
+- configurable token scopes via `MCP_BEARER_TOKENS`
+
+Session mode:
+
+- default: stateful
+- compatibility option: `MCP_HTTP_STATELESS=true` (for clients that do not preserve `Mcp-Session-Id`)
+
+---
+
+## MCP Tooling (What To Call, When)
+
+### Primary flow tools
+
+1. `prepare_artifact_fix_context`
+2. `submit_client_assessment`
+3. `quality_gate_artifact`
+4. `validate_export`
+
+### Advisory/support tools
+
+- `analyze_artifact`
+- `analyze_context_bundle`
+- `suggest_patch`
+- `analyze_workspace_artifacts` (local-first; remote-disabled by default)
+
+### Recommended fix/update order
+
+1. `prepare_artifact_fix_context`
+2. read resources (`scoring-policy`, `assessment-schema`, `artifact-spec`, `artifact-path-hints`)
+3. `submit_client_assessment`
+4. `quality_gate_artifact` with `candidateContent + clientAssessment`
+5. `validate_export`
+
+---
+
+## Prompts and Resources Exposed via MCP
+
+### Prompts
+
+- `artifact_create_prompt`
+- `artifact_review_prompt`
+- `artifact_fix_prompt`
+
+### Resources
+
+- `agentlint://quality-metrics/<type>`
+- `agentlint://prompt-pack/<type>`
+- `agentlint://prompt-template/<type>`
+- `agentlint://artifact-path-hints/<type>`
+- `agentlint://artifact-spec/<type>`
+- `agentlint://scoring-policy/<type>`
+- `agentlint://assessment-schema/<type>`
+- `agentlint://improvement-playbook/<type>`
+
+---
 
 ## Quick Start
 
-1. Install dependencies:
+### 1) Install
 
 ```bash
 npm install
 ```
 
-2. Configure env vars:
+### 2) Configure env
 
 ```bash
 cp .env.example .env
 ```
 
-3. Start web app:
+### 3) Start app
 
 ```bash
 npm run dev
 ```
 
+---
+
 ## Scripts
 
 - `npm run dev` - start Next.js app
-- `npm run lint` - run ESLint
-- `npm run test` - run Vitest unit/integration tests
-- `npm run test:e2e` - run Playwright tests
 - `npm run build` - production build
-- `npm run cli` - Agent Lint CLI entrypoint
-- `npm run mcp:stdio` - local MCP stdio server
-- `npm run mcp:http` - Streamable HTTP MCP server
-- `npm run mcp:inspector` - launch MCP inspector against stdio server
+- `npm run start` - start production server
+- `npm run lint` - run ESLint
+- `npm run test` - run Vitest
+- `npm run test:e2e` - run Playwright
+- `npm run test:all` - run unit/integration + e2e
+- `npm run cli` - Agent Lint CLI
+- `npm run mcp:stdio` - local MCP server
+- `npm run mcp:http` - remote streamable HTTP MCP server
+- `npm run mcp:inspector` - MCP inspector against stdio server
 
-## CLI
+---
 
-Examples:
+## CLI Usage Examples
 
 ```bash
 npm run cli -- analyze --type agents --file AGENTS.md --json
@@ -58,93 +215,235 @@ npm run cli -- fix --type rules --file docs/rules.md
 npm run cli -- score --type workflows --content "# Workflow\n\n1. Run lint" --json
 ```
 
-## MCP Server
+---
 
-MCP path uses client-led weighted scoring. Your MCP client LLM scans the repository, produces metric scores + evidence, and rewrites artifacts; Agent Lint MCP provides policy/weights, guardrails, and quality-gate orchestration.
+## MCP Installation: Different Client Patterns
 
-### Local stdio
+Important: MCP client configuration formats vary by product/version. The snippets below use common `mcpServers` patterns widely used in the ecosystem.
 
-Run:
+### A) Cursor-style project config (`.cursor/mcp.json`)
 
-```bash
-npm run mcp:stdio
+#### Local stdio (`agentlint-local`)
+
+```json
+{
+  "mcpServers": {
+    "agentlint-local": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp/stdio.ts"]
+    }
+  }
+}
 ```
 
-Use this in local desktop/IDE integrations that spawn a process (Claude Desktop, Cursor, etc).
+#### Remote HTTP (`agentlint-remote`)
 
-Local mode also enables workspace scanning (`analyze_workspace_artifacts`) by default.
-
-### Remote streamable HTTP
-
-Run:
-
-```bash
-npm run mcp:http
+```json
+{
+  "mcpServers": {
+    "agentlint-remote": {
+      "url": "https://your-domain.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
+  }
+}
 ```
 
-Default endpoint: `http://127.0.0.1:3333/mcp`
+### B) Claude Desktop-style config (`mcpServers` block)
 
-Remote mode disables workspace scanning by default. Remote clients should pass file content directly to tools.
+```json
+{
+  "mcpServers": {
+    "agentlint-local": {
+      "command": "npx",
+      "args": ["tsx", "/absolute/path/to/agentlint/src/mcp/stdio.ts"]
+    },
+    "agentlint-remote": {
+      "url": "https://your-domain.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
+  }
+}
+```
 
-Health endpoints:
+### C) VS Code-compatible MCP setup
 
-- `GET /healthz`
-- `GET /readyz` (includes auth/stateless flags, advertised tools, prompt/resource capability summary)
+If your VS Code MCP integration supports JSON server entries, use the same pattern:
 
-OAuth metadata endpoints:
+```json
+{
+  "mcpServers": {
+    "agentlint-remote": {
+      "url": "https://your-domain.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
+  }
+}
+```
 
-- `GET /.well-known/oauth-protected-resource`
-- `GET /.well-known/oauth-authorization-server` (enabled when OAuth env vars are set)
+### D) Windsurf-like remote setup notes
 
-### Remote auth model (beta)
-
-- Bearer token auth is enabled by default (`MCP_REQUIRE_AUTH=true`)
-- Configure tokens with scope mappings via `MCP_BEARER_TOKENS`
-- Example:
+- pass `Authorization: Bearer <token>`
+- if session header errors appear (`400/404`), enable:
 
 ```env
-MCP_BEARER_TOKENS=friend1=my-token-1:*;friend2=my-token-2:analyze,validate
+MCP_HTTP_STATELESS=true
 ```
 
-## MCP Conventions for Better Auto-Use
+PowerShell token formatting tip:
 
-If your coding agent supports server instructions, prompts, and resources, Agent Lint now exposes all three:
+```powershell
+$TOKEN = "your-token"
+$env:MCP_BEARER_TOKENS = "windsurf=${TOKEN}:*"
+```
 
-- Tools: artifact QA and patch workflow
-- Prompts: `artifact_create_prompt`, `artifact_review_prompt`, `artifact_fix_prompt`
-- Resources:
-  - `agentlint://quality-metrics/<type>`
-  - `agentlint://prompt-pack/<type>`
-  - `agentlint://prompt-template/<type>`
-  - `agentlint://artifact-path-hints/<type>`
-  - `agentlint://artifact-spec/<type>`
-  - `agentlint://scoring-policy/<type>`
-  - `agentlint://assessment-schema/<type>`
-  - `agentlint://improvement-playbook/<type>`
+---
 
-Recommended default tool order for artifact tasks:
+## Real-World Usage Scenarios
 
-1. `prepare_artifact_fix_context`
-2. Read resources (`scoring-policy`, `assessment-schema`, `artifact-spec`, `artifact-path-hints`)
+### Scenario 1: Build AGENTS.md from scratch
+
+User intent:
+
+"Create AGENTS.md for our monorepo with strict safety rules and explicit verification gates."
+
+Flow:
+
+1. `artifact_create_prompt`
+2. `prepare_artifact_fix_context(type=agents)`
+3. read `scoring-policy/agents`, `assessment-schema/agents`, `artifact-spec/agents`
+4. `submit_client_assessment`
+5. `quality_gate_artifact`
+6. `validate_export`
+
+Outcome:
+
+- measurable quality, not subjective review
+
+### Scenario 2: Fix low-scoring rules file
+
+User intent:
+
+"Improve this rules file to score above 90 and keep it concise."
+
+Flow:
+
+1. `artifact_fix_prompt`
+2. `prepare_artifact_fix_context(type=rules)`
 3. `submit_client_assessment`
-4. `quality_gate_artifact` (with `candidateContent` + `clientAssessment`)
-5. `validate_export` before final output
+4. `quality_gate_artifact` (+ `suggest_patch` if selective merge is needed)
+5. `validate_export`
 
-Notes:
+Outcome:
 
-- `analyze_artifact` and `analyze_context_bundle` remain advisory diagnostics (not primary score authority).
-- `quality_gate_artifact` requires `clientAssessment` by default in fix/update loops.
-- Final score is hybrid: client weighted score (90%) + server guardrail score (10%).
-- Hard-fail conditions still apply for export validity and critical safety signals.
+- patchable, traceable improvement loop with evidence
 
-## Public Deployment
+### Scenario 3: Review multiple context artifacts
 
-Use `Dockerfile.mcp` for remote deployment. Minimum required env vars:
+User intent:
 
-- `MCP_REQUIRE_AUTH=true`
-- `MCP_BEARER_TOKENS=...`
-- `MCP_PUBLIC_BASE_URL=https://your-domain.example.com`
+"Check whether AGENTS + workflows + roadmap are aligned before rollout."
 
-Optional MCP registry metadata template is provided at `server.json`.
+Flow:
 
-See `docs/mcp_remote_runbook.md` for a complete go-live checklist.
+1. `analyze_context_bundle`
+2. `prepare_artifact_fix_context`
+3. `submit_client_assessment`
+4. `quality_gate_artifact`
+5. `validate_export`
+
+Outcome:
+
+- cross-document consistency with explicit guardrails
+
+---
+
+## Production Setup (Remote)
+
+Minimum env:
+
+```env
+MCP_HTTP_HOST=0.0.0.0
+MCP_HTTP_PORT=3333
+MCP_PUBLIC_BASE_URL=https://your-domain.example.com
+MCP_REQUIRE_AUTH=true
+MCP_BEARER_TOKENS=client1=token-1:*;client2=token-2:analyze,validate
+MCP_ENFORCE_TOOL_SCOPES=true
+```
+
+Container deploy:
+
+```bash
+docker build -f Dockerfile.mcp -t agentlint-mcp:latest .
+docker run --rm -p 3333:3333 --env-file .env agentlint-mcp:latest
+```
+
+Post-deploy checks:
+
+- `/healthz` returns 200
+- `/readyz` returns 200
+- unauthorized request returns 401
+- scope violation returns 403
+
+---
+
+## Tips and Tactics
+
+- Start fix loops with `prepare_artifact_fix_context` every time.
+- Keep `agentlint-local` and `agentlint-remote` usage intentional:
+  - local repo scan needed -> `agentlint-local`
+  - shared/online setup needed -> `agentlint-remote`
+- In remote mode, pass relevant file content explicitly when workspace scan is disabled.
+- Use `targetScore` + `iterationIndex` + `previousFinalScore` in iterative improvement runs.
+- Always run `validate_export` before final output.
+- Use narrow scopes in production (`*` only for trusted/dev contexts).
+
+---
+
+## Security and Reliability Notes
+
+- Bearer auth is enabled by default (`MCP_REQUIRE_AUTH=true`).
+- Tool scope enforcement is available (`MCP_ENFORCE_TOOL_SCOPES=true`).
+- Rate limiting, request size limits, timeouts, and concurrency limits are configurable.
+- Session TTL and cleanup controls are available for long-lived deployments.
+- Optional OAuth metadata endpoints supported for auth migration.
+
+---
+
+## Validation and Test Coverage
+
+Integration coverage includes:
+
+- authenticated/unauthenticated MCP HTTP flows
+- stateful vs stateless behavior
+- scope enforcement
+- malformed JSON and session edge cases
+- oauth metadata endpoints
+- stdio end-to-end tool flow
+
+Run targeted MCP tests:
+
+```bash
+npm run test -- tests/integration/mcp-http.test.ts tests/integration/mcp-auth.test.ts tests/integration/mcp-stdio.test.ts
+```
+
+---
+
+## Additional Docs
+
+- `docs/mcp_remote_runbook.md` - go-live and operations checklist
+- `docs/mcp_client_conventions.md` - client invocation conventions
+- `docs/mcp_phase6_contract.md` - MCP contract and flow
+- `server.json` - optional MCP registry metadata template
+
+---
+
+## Positioning in One Line
+
+Agent Lint is the quality control layer for AI coding agent context artifacts: fast to adopt, measurable by default, and production-friendly via local and remote MCP modes.
