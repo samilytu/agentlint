@@ -6,12 +6,29 @@ export type RateLimitResult = {
   retryAfterMs: number;
 };
 
+function pruneExpiredWindows(now: number, windowMs: number): void {
+  for (const [key, value] of windows.entries()) {
+    if (now - value.startedAt >= windowMs) {
+      windows.delete(key);
+    }
+  }
+}
+
+export function resetRateLimitWindowsForTests(): void {
+  windows.clear();
+}
+
+export function getRateLimitWindowCountForTests(): number {
+  return windows.size;
+}
+
 export function checkRateLimit(
   key: string,
   maxRequests: number,
   windowMs: number,
 ): RateLimitResult {
   const now = Date.now();
+  pruneExpiredWindows(now, windowMs);
   const existing = windows.get(key);
 
   if (!existing || now - existing.startedAt >= windowMs) {

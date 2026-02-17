@@ -52,6 +52,11 @@ type McpHttpRequest = IncomingMessage & {
   auth?: AuthInfo;
 };
 
+function resolveAuthClientId(req: Request): string | null {
+  const auth = (req as unknown as McpHttpRequest).auth;
+  return auth?.clientId ?? null;
+}
+
 const MCP_PROMPT_NAMES = [
   "artifact_create_prompt",
   "artifact_review_prompt",
@@ -289,6 +294,13 @@ export function createMcpHttpApp(config: McpHttpServerConfig): {
           return res.status(404).json({ error: "Unknown MCP session." });
         }
 
+        const requestClientId = resolveAuthClientId(req);
+        if (session.authClientId !== null && requestClientId !== session.authClientId) {
+          return res.status(403).json({
+            error: "MCP session is bound to a different authenticated client.",
+          });
+        }
+
         sessionStore.touch(sessionHeader);
         await session.transport.handleRequest(req as McpHttpRequest, res, req.body);
         return;
@@ -320,10 +332,12 @@ export function createMcpHttpApp(config: McpHttpServerConfig): {
       await transport.handleRequest(req as McpHttpRequest, res, req.body);
 
       if (initializedSessionId) {
+        const requestClientId = resolveAuthClientId(req);
         sessionStore.set({
           sessionId: initializedSessionId,
           transport,
           server,
+          authClientId: requestClientId,
           createdAt: Date.now(),
           lastSeenAt: Date.now(),
         });

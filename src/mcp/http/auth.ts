@@ -17,6 +17,7 @@ export type McpAuthConfig = {
   maxRequests: number;
   windowMs: number;
   enforceToolScopes: boolean;
+  trustProxyHeaders: boolean;
 };
 
 type McpAuthenticatedRequest = Request & {
@@ -79,6 +80,7 @@ export function loadMcpAuthConfigFromEnv(): McpAuthConfig {
   const maxRequests = Number(process.env.MCP_RATE_LIMIT_MAX_REQUESTS ?? 120);
   const windowMs = Number(process.env.MCP_RATE_LIMIT_WINDOW_MS ?? 60_000);
   const enforceToolScopes = process.env.MCP_ENFORCE_TOOL_SCOPES !== "false";
+  const trustProxyHeaders = process.env.MCP_TRUST_PROXY === "true";
 
   if (required && tokens.length === 0) {
     throw new Error(
@@ -92,6 +94,7 @@ export function loadMcpAuthConfigFromEnv(): McpAuthConfig {
     maxRequests,
     windowMs,
     enforceToolScopes,
+    trustProxyHeaders,
   };
 }
 
@@ -148,11 +151,23 @@ function extractToolCallNames(payload: unknown): string[] {
   return names;
 }
 
-function getIpAddress(req: Request): string {
+function getIpAddress(req: Request, trustProxyHeaders: boolean): string {
+  if (!trustProxyHeaders) {
+    return req.ip || req.socket.remoteAddress || "unknown";
+  }
+
   const forwardedFor = req.headers["x-forwarded-for"];
   if (typeof forwardedFor === "string" && forwardedFor.length > 0) {
     const [first] = forwardedFor.split(",");
     return first?.trim() || "unknown";
+  }
+
+  if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
+    const [firstHeaderValue] = forwardedFor;
+    if (typeof firstHeaderValue === "string" && firstHeaderValue.length > 0) {
+      const [first] = firstHeaderValue.split(",");
+      return first?.trim() || "unknown";
+    }
   }
 
   return req.ip || req.socket.remoteAddress || "unknown";
@@ -186,13 +201,15 @@ export function createMcpAuthMiddleware(config: McpAuthConfig): RequestHandler {
     (req as McpAuthenticatedRequest).auth = authInfo;
 
     const rateLimit = checkRateLimit(
-      `mcp:${tokenRecord.clientId}:${getIpAddress(req)}`,
+      `mcp:${tokenRecord.clientId}:${getIpAddress(req, config.trustProxyHeaders)}`,
       config.maxRequests,
       config.windowMs,
     );
+    res.setHeader("x-ratelimit-limit", String(config.maxRequests));
     res.setHeader("x-ratelimit-remaining", String(rateLimit.remaining));
 
     if (!rateLimit.allowed) {
+      res.setHeader("retry-after", String(Math.ceil(rateLimit.retryAfterMs / 1000)));
       return res.status(429).json({
         error: `Rate limit exceeded. Retry in ${Math.ceil(rateLimit.retryAfterMs / 1000)}s.`,
       });

@@ -5,6 +5,7 @@ export type McpSessionRecord = {
   sessionId: string;
   transport: StreamableHTTPServerTransport;
   server: McpServer;
+  authClientId: string | null;
   createdAt: number;
   lastSeenAt: number;
 };
