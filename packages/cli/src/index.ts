@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const nodeVersion = parseInt(process.versions.node.split(".")[0], 10);
 if (nodeVersion < 18) {
   process.stderr.write(
