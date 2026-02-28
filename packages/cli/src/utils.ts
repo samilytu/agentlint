@@ -1,5 +1,6 @@
 import { artifactTypeValues, type ArtifactType } from "@agent-lint/shared";
 import { InvalidArgumentError } from "commander";
+import { lstat } from "node:fs/promises";
 import util from "node:util";
 
 export type CliGlobalOptions = {
@@ -110,4 +111,19 @@ export function logOperational(message: string, options: CliGlobalOptions): void
     return;
   }
   writeStderr(message);
+}
+
+/** Max file size for CLI input — 1MB matching Zod schema limit. */
+export const MAX_INPUT_FILE_BYTES = 1_000_000;
+
+export async function validateFileSize(filePath: string): Promise<void> {
+  const stats = await lstat(filePath);
+  if (stats.isSymbolicLink()) {
+    throw new CliUsageError(`Refusing to follow symlink: ${filePath}`);
+  }
+  if (stats.size > MAX_INPUT_FILE_BYTES) {
+    throw new CliUsageError(
+      `File too large (${stats.size} bytes, max ${MAX_INPUT_FILE_BYTES}). Reduce content size or use MCP workspace scan.`,
+    );
+  }
 }

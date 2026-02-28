@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile, lstat } from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import path from "node:path";
 
@@ -184,14 +184,19 @@ export async function executeAnalyzeWorkspaceArtifactsTool(
   const skippedFiles: string[] = [];
 
   for (const filePath of files) {
-    let fileStats: Awaited<ReturnType<typeof stat>>;
+    let fileStats: Awaited<ReturnType<typeof lstat>>;
     try {
-      fileStats = await stat(filePath);
+      fileStats = await lstat(filePath);
     } catch {
-      skippedFiles.push(`${path.relative(rootPath, filePath)} (stat failed)`);
+      skippedFiles.push(`${path.relative(rootPath, filePath)} (lstat failed)`);
       continue;
     }
 
+    // Skip symlinks per dikkat_edilecekler.md §3.1
+    if (fileStats.isSymbolicLink()) {
+      skippedFiles.push(`${path.relative(rootPath, filePath)} (symlink — skipped)`);
+      continue;
+    }
     if (fileStats.size > MAX_FILE_BYTES) {
       skippedFiles.push(`${path.relative(rootPath, filePath)} (too large)`);
       continue;

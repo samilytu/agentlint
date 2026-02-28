@@ -2,7 +2,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 
 import { createAgentLintMcpServer } from "./server.js";
 import { logMcp } from "./logger.js";
-
+import { applyMessageSizeGuard } from "./transport-security.js";
 export async function runStdioServer(): Promise<void> {
   const server = createAgentLintMcpServer({
     name: process.env.MCP_SERVER_NAME,
@@ -10,7 +10,7 @@ export async function runStdioServer(): Promise<void> {
     transportMode: "stdio",
   });
 
-  const transport = new StdioServerTransport();
+  const transport = applyMessageSizeGuard(new StdioServerTransport());
   await server.connect(transport);
 
   logMcp("info", "mcp.stdio.started", {

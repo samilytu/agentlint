@@ -1,5 +1,5 @@
 import type { Dirent } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, lstat } from "node:fs/promises";
 import path from "node:path";
 
 import { analyzeArtifactMcpCore } from "@agent-lint/core";
@@ -10,6 +10,7 @@ import { formatScanJson, formatScanText, type ScanDisplayResult } from "../forma
 import {
   inferArtifactType,
   logOperational,
+  MAX_INPUT_FILE_BYTES,
   mergeCliOptions,
   parseArtifactType,
   parseFailBelowOption,
@@ -138,6 +139,10 @@ export function registerScanCommand(program: Command): void {
         for (const filePath of files) {
           let content: string;
           try {
+            const stats = await lstat(filePath);
+            if (stats.isSymbolicLink() || stats.size > MAX_INPUT_FILE_BYTES) {
+              continue;
+            }
             content = await readFile(filePath, "utf8");
           } catch {
             continue;

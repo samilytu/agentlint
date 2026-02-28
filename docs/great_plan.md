@@ -368,26 +368,26 @@ Mevcut 8 tool'u incele ve sadeleştir:
 
 ### 4.1 — apply_patches Güvenlik Modeli
 
-- [ ] **Hash Guard**: Dosya okunduğunda SHA-256 hash al, yazma anında doğrula
-- [ ] **Allowlist**: Sadece izin verilen uzantılar (`.md`, `.yaml`, `.yml`, `.txt`)
-- [ ] **Path Traversal Koruması**: `../` ve sembolik link'leri reddet
-- [ ] **Boyut Limiti**: Tek patch 500KB'ı geçemez
-- [ ] **Backup/Rollback**: Her yazma işleminde `.agentlint-backup/` dizinine yedek
-- [ ] **Dry Run Varsayılan**: `--dry-run` varsayılan, `--apply` ile gerçek yazma
-- [ ] **Onay Mekanizması**: CLI'da interaktif onay (CI modda skip)
+- [x] **Hash Guard**: Dosya okunduğunda SHA-256 hash al, yazma anında doğrula
+- [x] **Allowlist**: Sadece izin verilen uzantılar (`.md`, `.yaml`, `.yml`, `.txt`)
+- [x] **Path Traversal Koruması**: `../` ve sembolik link'leri reddet
+- [x] **Boyut Limiti**: Tek patch 500KB'ı geçemez
+- [x] **Backup/Rollback**: Her yazma işleminde `.agentlint-backup/` dizinine yedek
+- [x] **Dry Run Varsayılan**: `--dry-run` varsayılan, `--apply` ile gerçek yazma
+- [x] **Onay Mekanizması**: CLI'da interaktif onay (CI modda skip)
 
 ### 4.2 — Input Güvenliği
 
-- [ ] Artifact içeriği sanitizasyonu (mevcut `sanitize.ts` kullan)
-- [ ] Path injection kontrolü (null bytes, vb.)
-- [ ] Dosya boyutu limiti (CLI ve MCP tool'larda)
-- [ ] Recursive symlink koruması
+- [x] Artifact içeriği sanitizasyonu (mevcut `sanitize.ts` kullan)
+- [x] Path injection kontrolü (null bytes, vb.)
+- [x] Dosya boyutu limiti (CLI ve MCP tool'larda)
+- [x] Recursive symlink koruması
 
 ### 4.3 — MCP Transport Güvenliği
 
-- [ ] Stdio: stdin/stdout clean (log'lar stderr'de)
-- [ ] JSON-RPC mesaj boyutu limiti
-- [ ] Tool timeout'ları (varsayılan 30s, `scan_workspace` 60s)
+- [x] Stdio: stdin/stdout clean (log'lar stderr'de)
+- [x] JSON-RPC mesaj boyutu limiti
+- [x] Tool timeout'ları (varsayılan 30s, `scan_workspace` 60s)
 - [ ] StreamableHTTP (Faz 5 ön hazırlık):
   - Origin header doğrulama (DNS rebinding koruması)
   - CORS strict policy
@@ -395,18 +395,18 @@ Mevcut 8 tool'u incele ve sadeleştir:
 
 ### 4.4 — Supply Chain
 
-- [ ] Minimum bağımlılık: `@modelcontextprotocol/sdk`, `gray-matter`, `commander`, `zod`
-- [ ] `npm audit` temiz
-- [ ] Lockfile commit edilmiş
-- [ ] `package.json` → `"files"` alanı ile sadece gerekli dosyalar publish
+- [x] Minimum bağımlılık: `@modelcontextprotocol/sdk`, `gray-matter`, `commander`, `zod`
+- [x] `npm audit` temiz
+- [x] Lockfile commit edilmiş
+- [x] `package.json` → `"files"` alanı ile sadece gerekli dosyalar publish
 
 ### 4.5 — Faz 4 Doğrulama Kontrol Listesi
 
-- [ ] `apply_patches` tüm güvenlik senaryolarını reddediyor (test suite ile kanıtla)
-- [ ] Path traversal denemeleri reddediliyor
-- [ ] Symlink takibi yapılmıyor
-- [ ] `npm audit` sıfır vulnerability
-- [ ] Publish edilecek dosya listesi minimal ve doğru
+- [x] `apply_patches` tüm güvenlik senaryolarını reddediyor (test suite ile kanıtla)
+- [x] Path traversal denemeleri reddediliyor
+- [x] Symlink takibi yapılmıyor
+- [x] `npm audit` sıfır vulnerability
+- [x] Publish edilecek dosya listesi minimal ve doğru
 
 ---
 

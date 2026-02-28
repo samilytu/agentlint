@@ -33,3 +33,12 @@ export {
 
 export { registerAgentLintResources } from "./resources/register-resources.js";
 export { registerAgentLintPrompts } from "./prompts/register-prompts.js";
+export {
+  applyMessageSizeGuard,
+  withToolTimeout,
+  getToolTimeout,
+  ToolTimeoutError,
+  TOOL_TIMEOUTS,
+  MAX_JSONRPC_MESSAGE_BYTES,
+  DEFAULT_TOOL_TIMEOUT_MS,
+} from "./transport-security.js";

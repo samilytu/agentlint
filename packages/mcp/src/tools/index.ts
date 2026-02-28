@@ -12,6 +12,7 @@ import { registerSubmitClientAssessmentTool } from "./submit-client-assessment.j
 import { registerSuggestPatchTool } from "./suggest-patch.js";
 import { registerValidateExportTool } from "./validate-export.js";
 import { registerApplyPatchesTool, type RegisterApplyPatchesToolOptions } from "./apply-patches.js";
+import { withTimeoutGuard } from "./tool-result.js";
 
 export {
   executeAnalyzeArtifactTool,
@@ -53,17 +54,20 @@ export function registerAgentLintTools(
   server: McpServer,
   options: RegisterAgentLintToolsOptions,
 ): void {
-  registerPrepareArtifactFixContextTool(server);
-  registerAnalyzeArtifactTool(server);
-  registerAnalyzeContextBundleTool(server);
-  registerSubmitClientAssessmentTool(server);
-  registerQualityGateArtifactTool(server);
-  registerSuggestPatchTool(server);
-  registerValidateExportTool(server);
-  registerAnalyzeWorkspaceArtifactsTool(server, {
+  // Wrap server with timeout guard so every tool gets automatic timeout protection
+  const guarded = withTimeoutGuard(server);
+
+  registerPrepareArtifactFixContextTool(guarded);
+  registerAnalyzeArtifactTool(guarded);
+  registerAnalyzeContextBundleTool(guarded);
+  registerSubmitClientAssessmentTool(guarded);
+  registerQualityGateArtifactTool(guarded);
+  registerSuggestPatchTool(guarded);
+  registerValidateExportTool(guarded);
+  registerAnalyzeWorkspaceArtifactsTool(guarded, {
     enabled: options.enableWorkspaceScan,
   } satisfies RegisterAnalyzeWorkspaceArtifactsOptions);
-  registerApplyPatchesTool(server, {
+  registerApplyPatchesTool(guarded, {
     enabled: options.enableApplyPatches,
   } satisfies RegisterApplyPatchesToolOptions);
 }

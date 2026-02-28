@@ -2,6 +2,7 @@
   "name": "@agent-lint/mcp",
   "version": "0.1.0",
   "type": "module",
+  "files": ["dist/", "README.md", "LICENSE"],
   "bin": {
     "agent-lint-mcp": "./dist/bin.js"
   },

@@ -10,6 +10,7 @@ import {
   mergeCliOptions,
   parseArtifactType,
   parseFailBelowOption,
+  validateFileSize,
   writeStderr,
   writeStdout,
   CliUsageError,
@@ -50,6 +51,7 @@ export function registerScoreCommand(program: Command): void {
       const globalOptions = mergeCliOptions(program.opts<CliGlobalOptions>(), options);
 
       try {
+        await validateFileSize(filePath);
         const content = await readFile(filePath, "utf8");
         const artifactType = resolveType(filePath, content, options.type);
 
