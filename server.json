@@ -42,32 +42,60 @@
       "description": "Generate patch suggestions to improve an artifact"
     },
     {
+      "name": "apply_patches",
+      "description": "Apply patch content to local files with hash-guard, extension allowlist, and backup protection"
+    },
+    {
       "name": "validate_export",
       "description": "Validate final artifact output for safety and correctness"
     }
   ],
   "resources": [
     {
-      "name": "scoring-policy",
-      "description": "Client-led scoring policy with 12 metrics and type-based weights"
+      "name": "agentlint-quality-metrics",
+      "description": "Quality and scoring metrics for each artifact type"
     },
     {
-      "name": "artifact-specs",
-      "description": "Artifact type specifications with required sections and anti-patterns"
+      "name": "agentlint-prompt-pack",
+      "description": "Prompt pack text used for artifact creation and fixing"
+    },
+    {
+      "name": "agentlint-prompt-template",
+      "description": "Judge prompt template used for analysis"
+    },
+    {
+      "name": "agentlint-artifact-path-hints",
+      "description": "Cross-client file path aliases and discovery hints"
+    },
+    {
+      "name": "agentlint-artifact-spec",
+      "description": "Structured specification and quality requirements for artifact creation"
+    },
+    {
+      "name": "agentlint-scoring-policy",
+      "description": "Client-led metric weighting and hybrid score formula by artifact type"
+    },
+    {
+      "name": "agentlint-assessment-schema",
+      "description": "Schema guidance for submit_client_assessment payloads"
+    },
+    {
+      "name": "agentlint-improvement-playbook",
+      "description": "Iteration guidance for client-driven artifact improvement loops"
     }
   ],
   "prompts": [
     {
-      "name": "analyze-artifact",
-      "description": "Guided artifact analysis prompt"
+      "name": "artifact_create_prompt",
+      "description": "Guided prompt to create AGENTS/skills/rules/workflows/plans content with Agent Lint quality criteria"
     },
     {
-      "name": "improve-artifact",
-      "description": "Guided artifact improvement prompt"
+      "name": "artifact_review_prompt",
+      "description": "Prompt for reviewing existing artifact content and enforcing Agent Lint quality standards"
     },
     {
-      "name": "review-workspace",
-      "description": "Guided workspace review prompt"
+      "name": "artifact_fix_prompt",
+      "description": "Prompt for fixing low-scoring artifact content using Agent Lint quality metrics and patch flow"
     }
   ],
   "categories": ["developer-tools", "code-quality", "static-analysis"],
