@@ -1,8 +1,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 
-import { artifactTypeSchema } from "@agent-lint/shared";
+import {
+  analyzeArtifactInputSchema,
+  artifactTypeSchema,
+  clientAssessmentSchema,
+  clientMetricEvidenceSchema,
+  type ArtifactType,
+} from "@agent-lint/shared";
 import { getPromptPack, judgeSystemPrompts } from "@agent-lint/core";
+import { asPromptArgsSchema, asPromptHandler } from "../tools/schema-compat.js";
 
 export function registerAgentLintPrompts(server: McpServer): void {
   server.registerPrompt(
@@ -11,15 +17,14 @@ export function registerAgentLintPrompts(server: McpServer): void {
       title: "Artifact Create Prompt",
       description:
         "Guided prompt to create AGENTS/skills/rules/workflows/plans content with Agent Lint quality criteria.",
-      argsSchema: {
+      argsSchema: asPromptArgsSchema({
         type: artifactTypeSchema,
-        projectContext: z
-          .string()
-          .optional()
-          .describe("Optional project context summary (stack, constraints, architecture)."),
-      },
+        projectContext: clientMetricEvidenceSchema.shape.summary.describe(
+          "Optional project context summary (stack, constraints, architecture).",
+        ),
+      }),
     },
-    ({ type, projectContext }) => {
+    asPromptHandler(({ type, projectContext }: { type: ArtifactType; projectContext?: string }) => {
       const pack = getPromptPack(type);
       const rubric = judgeSystemPrompts[type];
 
@@ -50,7 +55,7 @@ export function registerAgentLintPrompts(server: McpServer): void {
           },
         ],
       };
-    },
+    }),
   );
 
   server.registerPrompt(
@@ -59,12 +64,12 @@ export function registerAgentLintPrompts(server: McpServer): void {
       title: "Artifact Review Prompt",
       description:
         "Prompt for reviewing existing artifact content and enforcing Agent Lint quality standards.",
-      argsSchema: {
+      argsSchema: asPromptArgsSchema({
         type: artifactTypeSchema,
-        content: z.string().min(1),
-      },
+        content: analyzeArtifactInputSchema.shape.content,
+      }),
     },
-    ({ type, content }) => {
+    asPromptHandler(({ type, content }: { type: ArtifactType; content: string }) => {
       const rubric = judgeSystemPrompts[type];
 
       return {
@@ -93,7 +98,7 @@ export function registerAgentLintPrompts(server: McpServer): void {
           },
         ],
       };
-    },
+    }),
   );
 
   server.registerPrompt(
@@ -102,16 +107,29 @@ export function registerAgentLintPrompts(server: McpServer): void {
       title: "Artifact Fix Prompt",
       description:
         "Prompt for fixing low-scoring artifact content using Agent Lint quality metrics and patch flow.",
-      argsSchema: {
+      argsSchema: asPromptArgsSchema({
         type: artifactTypeSchema,
-        originalContent: z.string().min(1),
-        score: z.number().int().min(0).max(100).optional(),
-        warnings: z.array(z.string()).max(50).optional(),
-      },
+        originalContent: analyzeArtifactInputSchema.shape.content,
+        score: clientAssessmentSchema.shape.confidence,
+        warnings: clientAssessmentSchema.shape.gaps,
+      }),
     },
-    ({ type, originalContent, score, warnings }) => {
+    asPromptHandler(({
+      type,
+      originalContent,
+      score,
+      warnings,
+    }: {
+      type: ArtifactType;
+      originalContent: string;
+      score?: number;
+      warnings?: string[];
+    }) => {
       const rubric = judgeSystemPrompts[type];
-      const warningBlock = warnings && warnings.length > 0 ? warnings.map((item) => `- ${item}`).join("\n") : "- none";
+      const warningBlock =
+        warnings && warnings.length > 0
+          ? warnings.map((item: string) => `- ${item}`).join("\n")
+          : "- none";
 
       return {
         messages: [
@@ -121,7 +139,9 @@ export function registerAgentLintPrompts(server: McpServer): void {
               type: "text",
               text: [
                 `Improve this ${type} artifact to meet quality requirements.`,
-                typeof score === "number" ? `Current score: ${score}` : "Current score: unknown",
+                typeof score === "number"
+                  ? `Current score: ${score}`
+                  : "Current score: unknown",
                 "Warnings:",
                 warningBlock,
                 "",
@@ -143,6 +163,6 @@ export function registerAgentLintPrompts(server: McpServer): void {
           },
         ],
       };
-    },
+    }),
   );
 }

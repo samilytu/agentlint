@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { validateMarkdownOrYaml } from "@agent-lint/core";
 
 import { validateExportInputSchema, type ValidateExportInput } from "@agent-lint/shared";
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { toToolResult } from "./tool-result.js";
 
 export type ValidateExportToolOutput = {
@@ -21,14 +22,14 @@ export function registerValidateExportTool(server: McpServer): void {
       title: "Validate Export",
       description:
         "Final hard guardrail before returning artifact content. Validates markdown/yaml export safety constraints.",
-      inputSchema: validateExportInputSchema,
+      inputSchema: asInputSchema(validateExportInputSchema),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: ValidateExportInput) => {
       try {
         const output = executeValidateExportTool(args);
         return toToolResult({
@@ -43,6 +44,6 @@ export function registerValidateExportTool(server: McpServer): void {
           isError: true,
         });
       }
-    },
+    }),
   );
 }

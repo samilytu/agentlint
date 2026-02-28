@@ -11,6 +11,7 @@ import {
 
 import { executeAnalyzeArtifactTool } from "./analyze-artifact.js";
 import { evaluateClientAssessment } from "./client-assessment-evaluator.js";
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { toToolResult } from "./tool-result.js";
 import { executeValidateExportTool } from "./validate-export.js";
 
@@ -184,14 +185,14 @@ export function registerSubmitClientAssessmentTool(server: McpServer): void {
       title: "Submit Client Assessment",
       description:
         "Primary and required client-led scoring entrypoint for artifact fixes. Submit weighted metric scores + evidence from the MCP client LLM; server recomputes weighted score, applies low-impact guardrail contribution, and returns directives plus full score breakdown.",
-      inputSchema: submitClientAssessmentInputSchema,
+      inputSchema: asInputSchema(submitClientAssessmentInputSchema),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: SubmitClientAssessmentInput) => {
       try {
         const output = await executeSubmitClientAssessmentTool(args);
         return toToolResult({
@@ -206,6 +207,6 @@ export function registerSubmitClientAssessmentTool(server: McpServer): void {
           isError: true,
         });
       }
-    },
+    }),
   );
 }

@@ -11,6 +11,7 @@ import {
 } from "@agent-lint/shared";
 import { analyzeArtifactMcpCore } from "@agent-lint/core";
 
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { toToolResult } from "./tool-result.js";
 
 const DEFAULT_MAX_FILES = 25;
@@ -264,14 +265,14 @@ export function registerAnalyzeWorkspaceArtifactsTool(
       title: "Analyze Workspace Artifacts",
       description:
         "Local-first workspace scanner. Use in local stdio sessions to discover and analyze AGENTS/rules/skills/workflows/plans files across a repository.",
-      inputSchema: analyzeWorkspaceArtifactsInputSchema,
+      inputSchema: asInputSchema(analyzeWorkspaceArtifactsInputSchema),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: AnalyzeWorkspaceArtifactsInput) => {
       try {
         const output = await executeAnalyzeWorkspaceArtifactsTool(args);
         return toToolResult({
@@ -286,6 +287,6 @@ export function registerAnalyzeWorkspaceArtifactsTool(
           isError: true,
         });
       }
-    },
+    }),
   );
 }

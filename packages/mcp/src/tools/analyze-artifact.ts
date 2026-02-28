@@ -4,6 +4,7 @@ import { buildPolicySnapshot } from "@agent-lint/shared";
 import { analyzeArtifactMcpCore } from "@agent-lint/core";
 
 import { analyzeArtifactInputSchema, type AnalyzeArtifactInput } from "@agent-lint/shared";
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { toToolResult } from "./tool-result.js";
 
 export type AnalyzeArtifactToolOutput = {
@@ -124,14 +125,14 @@ export function registerAnalyzeArtifactTool(server: McpServer): void {
       title: "Analyze Artifact",
       description:
         "Advisory deterministic analysis for AGENTS.md/skills/rules/workflows/plans. Returns policy snapshot and resource URIs so client LLM always sees metric weights before rewrite. Not the primary scoring authority.",
-      inputSchema: analyzeArtifactInputSchema,
+      inputSchema: asInputSchema(analyzeArtifactInputSchema),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: AnalyzeArtifactInput) => {
       try {
         const output = await executeAnalyzeArtifactTool(args);
         const fallbackLabel = output.fallbackUsed
@@ -150,6 +151,6 @@ export function registerAnalyzeArtifactTool(server: McpServer): void {
           isError: true,
         });
       }
-    },
+    }),
   );
 }

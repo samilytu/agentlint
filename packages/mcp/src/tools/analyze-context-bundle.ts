@@ -7,6 +7,7 @@ import {
   analyzeContextBundleInputSchema,
   type AnalyzeContextBundleInput,
 } from "@agent-lint/shared";
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { toToolResult } from "./tool-result.js";
 
 const DEFAULT_PREVIEW_CHARS = 1_500;
@@ -82,14 +83,14 @@ export function registerAnalyzeContextBundleTool(server: McpServer): void {
       title: "Analyze Context Bundle",
       description:
         "Advisory merged-context diagnostics (for example AGENTS + rules + roadmap). Returns policy snapshot and resource URIs so client LLM can continue with submit_client_assessment and quality_gate_artifact.",
-      inputSchema: analyzeContextBundleInputSchema,
+      inputSchema: asInputSchema(analyzeContextBundleInputSchema),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: AnalyzeContextBundleInput) => {
       try {
         const output = await executeAnalyzeContextBundleTool(args);
 
@@ -105,6 +106,6 @@ export function registerAnalyzeContextBundleTool(server: McpServer): void {
           isError: true,
         });
       }
-    },
+    }),
   );
 }

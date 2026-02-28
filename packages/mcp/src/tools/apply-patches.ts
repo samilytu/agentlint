@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { applyPatchSecure, computeSha256 } from "@agent-lint/core";
 import { applyPatchesInputSchema, type ApplyPatchesInput } from "@agent-lint/shared";
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { toToolResult } from "./tool-result.js";
 
 export type ApplyPatchesToolOutput = {
@@ -81,14 +82,14 @@ export function registerApplyPatchesTool(
       title: "Apply Patches",
       description:
         "Write patched content to an artifact file with full security guards: SHA-256 hash verification, extension allowlist (.md/.yaml/.yml/.txt), path traversal protection, automatic backup, and dry-run by default. Requires allowWrite=true and dryRun=false to actually write. Only available in stdio (local) transport mode.",
-      inputSchema: applyPatchesInputSchema,
+      inputSchema: asInputSchema(applyPatchesInputSchema),
       annotations: {
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: true,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: ApplyPatchesInput) => {
       try {
         const output = executeApplyPatchesTool(args);
 
@@ -113,6 +114,6 @@ export function registerApplyPatchesTool(
           isError: true,
         });
       }
-    },
+    }),
   );
 }

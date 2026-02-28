@@ -8,6 +8,7 @@ import { CLIENT_LED_REQUIRED_FLOW, buildPolicySnapshot } from "@agent-lint/share
 
 import { executeAnalyzeArtifactTool } from "./analyze-artifact.js";
 import { evaluateClientAssessment } from "./client-assessment-evaluator.js";
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { executeSuggestPatchTool } from "./suggest-patch.js";
 import { toToolResult } from "./tool-result.js";
 import { executeValidateExportTool } from "./validate-export.js";
@@ -293,14 +294,14 @@ export function registerQualityGateArtifactTool(server: McpServer): void {
       title: "Quality Gate Artifact",
       description:
         "Default artifact QA gate for client-led workflows. In fix/update flows clientAssessment is required by default; run prepare_artifact_fix_context and submit_client_assessment first, then call this tool with candidateContent + clientAssessment for weighted final scoring.",
-      inputSchema: qualityGateArtifactInputSchema,
+      inputSchema: asInputSchema(qualityGateArtifactInputSchema),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: QualityGateArtifactInput) => {
       try {
         const output = await executeQualityGateArtifactTool(args);
         const hardFailLabel = output.hardFailures.length > 0 ? ` hardFailures=${output.hardFailures.length}` : "";
@@ -316,6 +317,6 @@ export function registerQualityGateArtifactTool(server: McpServer): void {
           isError: true,
         });
       }
-    },
+    }),
   );
 }

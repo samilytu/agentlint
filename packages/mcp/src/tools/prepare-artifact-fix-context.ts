@@ -10,6 +10,7 @@ import {
   type PrepareArtifactFixContextInput,
 } from "@agent-lint/shared";
 
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { toToolResult } from "./tool-result.js";
 
 const DEFAULT_TARGET_SCORE = 90;
@@ -133,14 +134,14 @@ export function registerPrepareArtifactFixContextTool(server: McpServer): void {
       title: "Prepare Artifact Fix Context",
       description:
         "Run first when user asks to fix/improve AGENTS/skills/rules/workflows/plans. Returns policy weights, mandatory scoring flow, required resources, and assessment template so MCP client LLM always sees scoring constraints.",
-      inputSchema: prepareArtifactFixContextInputSchema,
+      inputSchema: asInputSchema(prepareArtifactFixContextInputSchema),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: PrepareArtifactFixContextInput) => {
       try {
         const output = executePrepareArtifactFixContextTool(args);
         return toToolResult({
@@ -155,6 +156,6 @@ export function registerPrepareArtifactFixContextTool(server: McpServer): void {
           isError: true,
         });
       }
-    },
+    }),
   );
 }

@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { applySelectedSegments, buildDiffSegments } from "@agent-lint/core";
 
 import { suggestPatchInputSchema, type SuggestPatchInput } from "@agent-lint/shared";
+import { asInputSchema, asToolHandler } from "./schema-compat.js";
 import { toToolResult } from "./tool-result.js";
 
 export type SuggestPatchToolOutput = {
@@ -60,14 +61,14 @@ export function registerSuggestPatchTool(server: McpServer): void {
       title: "Suggest Patch",
       description:
         "Selective patch helper for client rewrites. Use before quality_gate_artifact when you need segment-level merge control between original and candidate content.",
-      inputSchema: suggestPatchInputSchema,
+      inputSchema: asInputSchema(suggestPatchInputSchema),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args) => {
+    asToolHandler(async (args: SuggestPatchInput) => {
       try {
         const output = executeSuggestPatchTool(args);
         return toToolResult({
@@ -82,6 +83,6 @@ export function registerSuggestPatchTool(server: McpServer): void {
           isError: true,
         });
       }
-    },
+    }),
   );
 }
