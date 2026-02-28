@@ -304,7 +304,7 @@ Mevcut 8 tool'u incele ve sadeleştir:
 
 ### 3.1 — Birim Testler
 
-- [ ] `packages/core/tests/`:
+- [x] `packages/core/tests/`:
   - 12 metrik için ayrı test dosyaları
   - Her artifact tipi için analiz testleri (agents, skills, rules, workflows, plans)
   - Ortak kontroller (injection-guard, secret-hygiene, safety) testleri
@@ -312,14 +312,14 @@ Mevcut 8 tool'u incele ve sadeleştir:
   - Scoring hesaplaması doğruluğu
   - Snapshot testler: bilinen iyi artifact'lar için regresyon
 
-- [ ] `packages/shared/tests/`:
+- [x] `packages/shared/tests/`:
   - Parser testleri (valid/invalid frontmatter)
   - Type guard testleri
   - Convention dosyaları doğruluğu
 
 ### 3.2 — Entegrasyon Testler
 
-- [ ] `packages/mcp/tests/`:
+- [x] `packages/mcp/tests/`:
   - MCP tool çağrıları (stdio üzerinden gerçek JSON-RPC)
   - Tool zincirleme: `analyze → prepare_fix → quality_gate`
   - Workspace scan ile gerçek dosya sistemi
@@ -329,14 +329,14 @@ Mevcut 8 tool'u incele ve sadeleştir:
     - Flag eksik → reddet
     - Başarılı yazma → backup var, içerik doğru
 
-- [ ] `packages/cli/tests/`:
+- [x] `packages/cli/tests/`:
   - Komut çıktı formatları
   - Exit code'lar
   - Config resolution
 
 ### 3.3 — Fixture'lar
 
-- [ ] `fixtures/` dizini:
+- [x] `fixtures/` dizini:
   - `good-agents.md` — yüksek skor beklenen
   - `bad-agents.md` — düşük skor beklenen (injection, secret leak, vb.)
   - `good-rules.md`, `bad-rules.md`
@@ -347,18 +347,18 @@ Mevcut 8 tool'u incele ve sadeleştir:
 
 ### 3.4 — Code Coverage & Quality Gates
 
-- [ ] Coverage hedefi: `packages/core` ≥ 90%, `packages/mcp` ≥ 80%, `packages/cli` ≥ 70%
-- [ ] `vitest` coverage raporu
-- [ ] Pre-commit hook: `lint-staged` + `vitest --run`
-- [ ] CI pipeline'da test zorunluluğu
+- [x] Coverage hedefi: `packages/core` ≥ 90%, `packages/mcp` ≥ 80%, `packages/cli` ≥ 70%
+- [x] `vitest` coverage raporu
+- [x] Pre-commit hook: `lint-staged` + `vitest --run`
+- [x] CI pipeline'da test zorunluluğu
 
 ### 3.5 — Faz 3 Doğrulama Kontrol Listesi
 
-- [ ] Tüm birim testler geçiyor
-- [ ] Tüm entegrasyon testleri geçiyor
-- [ ] Coverage hedefleri karşılanıyor
-- [ ] Fixture-bazlı regresyon testleri mevcut
-- [ ] `apply_patches` güvenlik testleri kapsamlı
+- [x] Tüm birim testler geçiyor
+- [x] Tüm entegrasyon testleri geçiyor
+- [x] Coverage hedefleri karşılanıyor
+- [x] Fixture-bazlı regresyon testleri mevcut
+- [x] `apply_patches` güvenlik testleri kapsamlı
 
 ---
 

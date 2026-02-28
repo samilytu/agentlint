@@ -15,6 +15,7 @@ import {
   parseFailBelowOption,
   writeStderr,
   writeStdout,
+  CliUsageError,
   type CliGlobalOptions,
 } from "../utils.js";
 
@@ -173,7 +174,7 @@ export function registerScanCommand(program: Command): void {
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown scan error";
         writeStderr(`scan failed: ${message}`);
-        process.exitCode = 1;
+        process.exitCode = error instanceof CliUsageError ? 2 : 1;
       }
     });
 }
