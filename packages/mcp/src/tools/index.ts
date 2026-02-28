@@ -11,6 +11,7 @@ import { registerQualityGateArtifactTool } from "./quality-gate-artifact.js";
 import { registerSubmitClientAssessmentTool } from "./submit-client-assessment.js";
 import { registerSuggestPatchTool } from "./suggest-patch.js";
 import { registerValidateExportTool } from "./validate-export.js";
+import { registerApplyPatchesTool, type RegisterApplyPatchesToolOptions } from "./apply-patches.js";
 
 export {
   executeAnalyzeArtifactTool,
@@ -41,9 +42,11 @@ export {
   executeValidateExportTool,
   type ValidateExportToolOutput,
 } from "./validate-export.js";
+export { executeApplyPatchesTool, type ApplyPatchesToolOutput } from "./apply-patches.js";
 
 export type RegisterAgentLintToolsOptions = {
   enableWorkspaceScan: boolean;
+  enableApplyPatches: boolean;
 };
 
 export function registerAgentLintTools(
@@ -60,4 +63,7 @@ export function registerAgentLintTools(
   registerAnalyzeWorkspaceArtifactsTool(server, {
     enabled: options.enableWorkspaceScan,
   } satisfies RegisterAnalyzeWorkspaceArtifactsOptions);
+  registerApplyPatchesTool(server, {
+    enabled: options.enableApplyPatches,
+  } satisfies RegisterApplyPatchesToolOptions);
 }

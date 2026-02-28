@@ -27,6 +27,7 @@ export type CreateAgentLintMcpServerOptions = {
   instructions?: string;
   transportMode?: AgentLintTransportMode;
   enableWorkspaceScan?: boolean;
+  enableApplyPatches?: boolean;
 };
 
 function resolveServerVersion(): string {
@@ -47,6 +48,24 @@ function resolveWorkspaceScanEnabled(options: CreateAgentLintMcpServerOptions): 
   }
 
   return process.env.MCP_ENABLE_WORKSPACE_SCAN === "true";
+}
+
+/**
+ * apply_patches is only enabled in stdio (local) mode by default.
+ * HTTP mode disables it entirely per great_plan.md §1.3.
+ */
+function resolveApplyPatchesEnabled(options: CreateAgentLintMcpServerOptions): boolean {
+  if (typeof options.enableApplyPatches === "boolean") {
+    return options.enableApplyPatches;
+  }
+
+  // Only enabled in stdio mode (local-first)
+  if (options.transportMode === "stdio") {
+    return process.env.MCP_ENABLE_APPLY_PATCHES !== "false";
+  }
+
+  // Disabled in HTTP mode by default
+  return false;
 }
 
 function resolveInstructions(options: CreateAgentLintMcpServerOptions, workspaceScanEnabled: boolean): string {
@@ -87,8 +106,11 @@ export function createAgentLintMcpServer(
     },
   );
 
+  const applyPatchesEnabled = resolveApplyPatchesEnabled(options);
+
   registerAgentLintTools(server, {
     enableWorkspaceScan: workspaceScanEnabled,
+    enableApplyPatches: applyPatchesEnabled,
   });
   registerAgentLintPrompts(server);
   registerAgentLintResources(server);

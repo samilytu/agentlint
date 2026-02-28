@@ -22,3 +22,21 @@ export type { AnalyzeArtifactMcpCoreInput, AnalyzeArtifactMcpCoreOutput } from "
 
 // Prompt templates (judge system prompts per artifact type)
 export { judgeSystemPrompts } from "./prompt-templates.js";
+
+// File security (apply_patches guards)
+export {
+  computeSha256,
+  verifyHash,
+  validateWritePath,
+  validatePatchSize,
+  createBackup,
+  rollbackFromBackup,
+  writeWithHashGuard,
+  applyPatchSecure,
+} from "./file-security.js";
+export type {
+  FileSecurityError,
+  FileSecurityResult,
+  ApplyPatchOptions,
+  ApplyPatchSuccess,
+} from "./file-security.js";

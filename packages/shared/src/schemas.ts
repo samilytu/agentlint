@@ -14,6 +14,7 @@ export const MCP_TOOL_NAMES = [
   "submit_client_assessment",
   "quality_gate_artifact",
   "suggest_patch",
+  "apply_patches",
   "validate_export",
   "analyze_workspace_artifacts",
 ] as const;
@@ -27,6 +28,7 @@ export const MCP_TOOL_SCOPE_REQUIREMENTS: Record<McpToolName, string> = {
   submit_client_assessment: "analyze",
   quality_gate_artifact: "analyze",
   suggest_patch: "patch",
+  apply_patches: "patch",
   validate_export: "validate",
   analyze_workspace_artifacts: "analyze",
 };
@@ -275,3 +277,37 @@ export const analyzeWorkspaceArtifactsInputSchema = z.object({
 });
 
 export type AnalyzeWorkspaceArtifactsInput = z.infer<typeof analyzeWorkspaceArtifactsInputSchema>;
+
+
+export const applyPatchesInputSchema = z.object({
+  filePath: z
+    .string()
+    .min(1)
+    .max(512)
+    .describe("Relative path to the artifact file to patch, within the working directory."),
+  patchedContent: z
+    .string()
+    .min(1)
+    .max(500_000)
+    .describe("Full patched content to write. Must be under 500KB."),
+  expectedHash: z
+    .string()
+    .length(64)
+    .regex(/^[a-f0-9]{64}$/)
+    .describe("SHA-256 hash of the file content at the time of last read. Prevents stale writes."),
+  workDir: z
+    .string()
+    .min(1)
+    .max(512)
+    .optional()
+    .describe("Working directory root. Defaults to process.cwd(). Target file must be inside this directory."),
+  allowWrite: z
+    .boolean()
+    .describe("Must be true to enable writing. Equivalent to --allow-write flag."),
+  dryRun: z
+    .boolean()
+    .optional()
+    .describe("When true (default), validates all guards but does not write. Set to false with allowWrite=true to apply."),
+});
+
+export type ApplyPatchesInput = z.infer<typeof applyPatchesInputSchema>;

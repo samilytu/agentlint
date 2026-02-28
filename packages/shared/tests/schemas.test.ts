@@ -28,10 +28,11 @@ function createValidAssessment() {
 
 describe("schemas", () => {
   it("exposes MCP tool names and scope requirements", () => {
-    expect(MCP_TOOL_NAMES).toHaveLength(8);
+    expect(MCP_TOOL_NAMES).toHaveLength(9);
     expect(MCP_TOOL_SCOPE_REQUIREMENTS.analyze_artifact).toBe("analyze");
     expect(MCP_TOOL_SCOPE_REQUIREMENTS.suggest_patch).toBe("patch");
     expect(MCP_TOOL_SCOPE_REQUIREMENTS.validate_export).toBe("validate");
+    expect(MCP_TOOL_SCOPE_REQUIREMENTS.apply_patches).toBe("patch");
   });
 
   it("validates mcp context document schema", () => {
