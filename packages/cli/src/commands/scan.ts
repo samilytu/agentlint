@@ -19,6 +19,7 @@ import {
   CliUsageError,
   type CliGlobalOptions,
 } from "../utils.js";
+import { createWatcher, printWatchBanner } from "../watch.js";
 
 const DEFAULT_MAX_FILES = 25;
 const MAX_SCAN_DEPTH = 7;
@@ -41,6 +42,7 @@ type ScanCommandOptions = {
   quiet?: boolean;
   verbose?: boolean;
   failBelow?: number;
+  watch?: boolean;
 };
 
 function parseMaxFiles(value: string): number {
@@ -124,12 +126,13 @@ export function registerScanCommand(program: Command): void {
     .option("--quiet", "Suppress operational logs")
     .option("--verbose", "Enable verbose output")
     .option("--fail-below <score>", "Fail with exit code 1 if score is below threshold", parseFailBelowOption)
+    .option("--watch", "Watch for file changes and re-analyze")
     .action(async (dir: string, options: ScanCommandOptions) => {
       const globalOptions = mergeCliOptions(program.opts<CliGlobalOptions>(), options);
       const rootPath = path.resolve(dir);
       const maxFiles = options.maxFiles ?? DEFAULT_MAX_FILES;
 
-      try {
+      async function runScan(): Promise<void> {
         logOperational(`Scanning ${rootPath} (max ${maxFiles} files)...`, globalOptions);
 
         const files = await collectCandidateFiles(rootPath, maxFiles);
@@ -175,6 +178,31 @@ export function registerScanCommand(program: Command): void {
         const threshold = globalOptions.failBelow;
         if (typeof threshold === "number" && results.some((result) => result.score < threshold)) {
           process.exitCode = 1;
+        }
+      }
+
+      try {
+        await runScan();
+
+        if (options.watch) {
+          printWatchBanner(rootPath);
+          const ac = new AbortController();
+          process.on("SIGINT", () => ac.abort());
+          process.on("SIGTERM", () => ac.abort());
+
+          createWatcher({
+            rootDir: rootPath,
+            onChange: async (changedPath) => {
+              writeStderr(`\nChange detected: ${changedPath}`);
+              await runScan();
+            },
+            signal: ac.signal,
+          });
+
+          // Keep process alive until signal
+          await new Promise<void>((resolve) => {
+            ac.signal.addEventListener("abort", () => resolve(), { once: true });
+          });
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown scan error";

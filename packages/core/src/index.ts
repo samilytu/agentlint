@@ -40,3 +40,26 @@ export type {
   ApplyPatchOptions,
   ApplyPatchSuccess,
 } from "./file-security.js";
+
+// Analyzer types
+export type { RuleCheck } from "./analyzer.js";
+
+// Custom Rule API + Plugin System
+export {
+  validateCustomRuleCheck,
+  executeCustomRule,
+  loadCustomRulesFromDir,
+  loadPlugins,
+  loadCustomRules,
+  runCustomRules,
+} from "./custom-rules.js";
+export type {
+  CustomRuleCheck,
+  CustomRuleContext,
+  CustomRuleFunction,
+  CustomRuleModule,
+  AgentLintPlugin,
+  LoadCustomRulesOptions,
+  LoadCustomRulesResult,
+  CustomRuleLoadError,
+} from "./custom-rules.js";

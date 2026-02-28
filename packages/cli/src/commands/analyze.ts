@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 import { analyzeArtifactMcpCore } from "@agent-lint/core";
 import type { ArtifactType } from "@agent-lint/shared";
@@ -17,6 +18,7 @@ import {
   CliUsageError,
   type CliGlobalOptions,
 } from "../utils.js";
+import { createWatcher, printWatchBanner } from "../watch.js";
 
 type AnalyzeCommandOptions = {
   type?: string;
@@ -24,6 +26,7 @@ type AnalyzeCommandOptions = {
   quiet?: boolean;
   verbose?: boolean;
   failBelow?: number;
+  watch?: boolean;
 };
 
 function resolveType(filePath: string, content: string, explicitType?: string): ArtifactType {
@@ -48,15 +51,17 @@ export function registerAnalyzeCommand(program: Command): void {
     .option("--quiet", "Suppress operational logs")
     .option("--verbose", "Enable verbose output")
     .option("--fail-below <score>", "Fail with exit code 1 if score is below threshold", parseFailBelowOption)
+    .option("--watch", "Watch for file changes and re-analyze")
     .action(async (filePath: string, options: AnalyzeCommandOptions) => {
       const globalOptions = mergeCliOptions(program.opts<CliGlobalOptions>(), options);
+      const resolvedPath = path.resolve(filePath);
 
-      try {
-        await validateFileSize(filePath);
-        const content = await readFile(filePath, "utf8");
-        const artifactType = resolveType(filePath, content, options.type);
+      async function runAnalyze(): Promise<void> {
+        await validateFileSize(resolvedPath);
+        const content = await readFile(resolvedPath, "utf8");
+        const artifactType = resolveType(resolvedPath, content, options.type);
 
-        logOperational(`Analyzing ${filePath} as ${artifactType}...`, globalOptions);
+        logOperational(`Analyzing ${resolvedPath} as ${artifactType}...`, globalOptions);
 
         const analyzed = await analyzeArtifactMcpCore({
           type: artifactType,
@@ -64,7 +69,7 @@ export function registerAnalyzeCommand(program: Command): void {
         });
 
         const result = {
-          filePath,
+          filePath: resolvedPath,
           type: artifactType,
           output: analyzed,
         };
@@ -77,6 +82,37 @@ export function registerAnalyzeCommand(program: Command): void {
 
         if (typeof globalOptions.failBelow === "number" && analyzed.result.score < globalOptions.failBelow) {
           process.exitCode = 1;
+        }
+      }
+
+      try {
+        await runAnalyze();
+
+        if (options.watch) {
+          const watchDir = path.dirname(resolvedPath);
+          const watchFile = path.basename(resolvedPath);
+          printWatchBanner(watchDir);
+          const ac = new AbortController();
+          process.on("SIGINT", () => ac.abort());
+          process.on("SIGTERM", () => ac.abort());
+
+          createWatcher({
+            rootDir: watchDir,
+            onChange: async (changedPath) => {
+              // Only re-analyze if the watched file changed
+              const changedBase = path.basename(changedPath);
+              if (changedBase !== watchFile) {
+                return;
+              }
+              writeStderr(`\nChange detected: ${changedPath}`);
+              await runAnalyze();
+            },
+            signal: ac.signal,
+          });
+
+          await new Promise<void>((resolve) => {
+            ac.signal.addEventListener("abort", () => resolve(), { once: true });
+          });
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown analysis error";

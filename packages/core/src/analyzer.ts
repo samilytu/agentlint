@@ -18,7 +18,7 @@ import { getPromptPack } from "./prompt-pack.js";
 
 type RequirementLevel = "mandatory" | "recommended";
 
-type RuleCheck = {
+export type RuleCheck = {
   id: string;
   label: string;
   metric: string;
@@ -979,10 +979,13 @@ export function analyzeArtifact(input: {
   type: ArtifactType;
   content: string;
   dimensions: JudgeDimensionScores;
+  customChecks?: RuleCheck[];
 }): JudgeAnalysis {
   const commonChecks = makeCommonChecks(input.type, input.content);
   const typeChecks = makeTypeChecks(input.type, input.content);
-  const checklist: ChecklistItem[] = [...commonChecks, ...typeChecks].map((check) => ({
+  const externalChecks: RuleCheck[] = input.customChecks ?? [];
+  const allChecks = [...commonChecks, ...typeChecks, ...externalChecks];
+  const checklist: ChecklistItem[] = allChecks.map((check) => ({
     id: check.id,
     label: check.label,
     status: check.status,
@@ -992,9 +995,9 @@ export function analyzeArtifact(input: {
     metric: check.metric,
   }));
 
-  const missingItems = checksToMissingItems([...commonChecks, ...typeChecks]);
+  const missingItems = checksToMissingItems(allChecks);
   const metricExplanations = checksToMetricExplanations(
-    [...commonChecks, ...typeChecks],
+    allChecks,
     input.dimensions,
   );
   const bestPracticeHints = getBestPracticeHints(input.type);
