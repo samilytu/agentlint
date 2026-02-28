@@ -221,7 +221,7 @@ describeMcpStdio("MCP stdio server integration", { timeout: 30_000 }, () => {
       return;
     }
 
-    expect(tools).toHaveLength(8);
+    expect(tools).toHaveLength(9);
 
     const toolNames = tools
       .map((tool) => (typeof tool === "object" && tool !== null ? (tool as { name?: unknown }).name : null))
@@ -230,6 +230,7 @@ describeMcpStdio("MCP stdio server integration", { timeout: 30_000 }, () => {
     expect(toolNames).toContain("analyze_artifact");
     expect(toolNames).toContain("quality_gate_artifact");
     expect(toolNames).toContain("analyze_workspace_artifacts");
+    expect(toolNames).toContain("apply_patches");
   });
 
   it("calls analyze_artifact successfully", async () => {

@@ -1,3 +1,8 @@
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { computeSha256 } from "@agent-lint/core";
 import { clientMetricIds, type ClientAssessmentInput } from "@agent-lint/shared";
 import { describe, expect, it } from "vitest";
 
@@ -5,6 +10,7 @@ import {
   executeAnalyzeArtifactTool,
   executeAnalyzeContextBundleTool,
   executeAnalyzeWorkspaceArtifactsTool,
+  executeApplyPatchesTool,
   executePrepareArtifactFixContextTool,
   executeQualityGateArtifactTool,
   executeSubmitClientAssessmentTool,
@@ -134,5 +140,93 @@ describe("MCP tool handlers", () => {
     expect(output.rootPath.length).toBeGreaterThan(0);
     expect(output.analyzedCount).toBeGreaterThan(0);
     expect(Array.isArray(output.findings)).toBe(true);
+  });
+
+  it("executes apply_patches in dry-run mode", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "agentlint-mcp-tools-"));
+
+    try {
+      const original = "# AGENTS\n\n- baseline\n";
+      const patched = "# AGENTS\n\n- baseline\n- improved\n";
+      const fileName = "AGENTS.md";
+      const filePath = path.join(tempDir, fileName);
+
+      await writeFile(filePath, original, "utf8");
+
+      const output = executeApplyPatchesTool({
+        filePath: fileName,
+        patchedContent: patched,
+        expectedHash: computeSha256(original),
+        workDir: tempDir,
+        allowWrite: true,
+        dryRun: true,
+      });
+
+      expect(output.success).toBe(true);
+      expect(output.dryRun).toBe(true);
+      expect(output.preview).toBeTruthy();
+
+      const after = await readFile(filePath, "utf8");
+      expect(after).toBe(original);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("executes apply_patches with write enabled", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "agentlint-mcp-tools-"));
+
+    try {
+      const original = "# Rules\n\n- rule a\n";
+      const patched = "# Rules\n\n- rule a\n- rule b\n";
+      const fileName = "rules.md";
+      const filePath = path.join(tempDir, fileName);
+
+      await writeFile(filePath, original, "utf8");
+
+      const output = executeApplyPatchesTool({
+        filePath: fileName,
+        patchedContent: patched,
+        expectedHash: computeSha256(original),
+        workDir: tempDir,
+        allowWrite: true,
+        dryRun: false,
+      });
+
+      expect(output.success).toBe(true);
+      expect(output.dryRun).toBe(false);
+      expect(output.newHash).toBe(computeSha256(patched));
+      expect(output.backupPath).toContain(".agentlint-backup");
+
+      const after = await readFile(filePath, "utf8");
+      expect(after).toBe(patched);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects apply_patches when allowWrite is false", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "agentlint-mcp-tools-"));
+
+    try {
+      const original = "# Plan\n\n- step 1\n";
+      const fileName = "plan.md";
+      const filePath = path.join(tempDir, fileName);
+
+      await writeFile(filePath, original, "utf8");
+
+      const output = executeApplyPatchesTool({
+        filePath: fileName,
+        patchedContent: "# Plan\n\n- step 1\n- step 2\n",
+        expectedHash: computeSha256(original),
+        workDir: tempDir,
+        allowWrite: false,
+      });
+
+      expect(output.success).toBe(false);
+      expect(output.errorCode).toBe("WRITE_NOT_ALLOWED");
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
   });
 });
