@@ -388,7 +388,7 @@ Mevcut 8 tool'u incele ve sadeleştir:
 - [x] Stdio: stdin/stdout clean (log'lar stderr'de)
 - [x] JSON-RPC mesaj boyutu limiti
 - [x] Tool timeout'ları (varsayılan 30s, `scan_workspace` 60s)
-- [ ] StreamableHTTP (Faz 5 ön hazırlık):
+- [x] StreamableHTTP (Faz 5 ön hazırlık):
   - Origin header doğrulama (DNS rebinding koruması)
   - CORS strict policy
   - Rate limiting (lokal tek kullanıcı bile olsa)
@@ -520,13 +520,13 @@ Mevcut 8 tool'u incele ve sadeleştir:
 
 ### 6.1 — StreamableHTTP Transport
 
-- [ ] Mevcut `src/mcp/http/` kodunu değerlendir ve gerekirse yeniden yaz
-- [ ] `packages/mcp-http/` veya `packages/mcp/src/http/` olarak ekle
-- [ ] Origin doğrulama (DNS rebinding koruması)
-- [ ] Session yönetimi (stateless mod opsiyonel)
-- [ ] CORS konfigürasyonu
-- [ ] Bearer token auth (opsiyonel)
-- [ ] Health check endpoint'leri (`/healthz`, `/readyz`)
+- [x] Mevcut `src/mcp/http/` kodunu değerlendir ve gerekirse yeniden yaz
+- [x] `packages/mcp/src/http.ts` + `packages/mcp/src/http-security.ts` olarak ekle
+- [x] Origin doğrulama (DNS rebinding koruması)
+- [x] Session yönetimi (per-server scoped Map<sessionId, transport>)
+- [x] CORS konfigürasyonu
+- [x] Bearer token auth (opsiyonel)
+- [x] Health check endpoint'leri (`/healthz`, `/readyz`)
 
 ### 6.2 — Opsiyonel Uzantılar
 
@@ -545,7 +545,7 @@ Mevcut 8 tool'u incele ve sadeleştir:
 
 ### 6.4 — Faz 6 Doğrulama Kontrol Listesi
 
-- [ ] HTTP transport çalışıyor (isteğe bağlı)
+- [x] HTTP transport çalışıyor (isteğe bağlı)
 - [ ] Custom rule yüklenebiliyor
 - [ ] CI pipeline yeşil
 - [ ] npm publish otomatik (tag-triggered)

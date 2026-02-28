@@ -1,4 +1,4 @@
-// @agent-lint/mcp — MCP server (stdio transport)
+// @agent-lint/mcp — MCP server (stdio + HTTP transport)
 // Zero state, read-only analysis, stderr logging only
 
 export {
@@ -9,6 +9,21 @@ export {
 } from "./server.js";
 
 export { runStdioServer } from "./stdio.js";
+
+export { runHttpServer, type HttpServerOptions } from "./http.js";
+
+export {
+  createSecurityContext,
+  validateRequest,
+  setCorsHeaders,
+  handleCorsPreflightIfNeeded,
+  sendJsonError,
+  parseJsonBody,
+  startRateLimitCleanup,
+  stopRateLimitCleanup,
+  type HttpSecurityOptions,
+  type HttpSecurityContext,
+} from "./http-security.js";
 
 export {
   registerAgentLintTools,
