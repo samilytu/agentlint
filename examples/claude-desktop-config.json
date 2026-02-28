@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agent-lint": {
+      "command": "npx",
+      "args": ["-y", "@agent-lint/mcp"]
+    }
+  }
+}

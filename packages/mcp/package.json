@@ -2,28 +2,32 @@
   "name": "@agent-lint/mcp",
   "version": "0.1.0",
   "type": "module",
+  "license": "MIT",
+  "description": "MCP server for AI agent context artifact analysis and quality scoring",
   "files": ["dist/", "README.md", "LICENSE"],
   "bin": {
     "agent-lint-mcp": "./dist/bin.js"
   },
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "engines": {
     "node": ">=18"
   },
   "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "pnpm run build",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@agent-lint/shared": "workspace:*",
-    "@agent-lint/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.26.0"
   },
   "devDependencies": {
+    "@agent-lint/shared": "workspace:*",
+    "@agent-lint/core": "workspace:*",
     "typescript": "^5.0.0"
   }
 }

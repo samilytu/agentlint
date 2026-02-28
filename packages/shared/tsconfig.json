@@ -9,6 +9,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "declaration": true,
+    "emitDeclarationOnly": true,
     "declarationMap": true,
     "composite": true,
     "outDir": "./dist",

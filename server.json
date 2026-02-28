@@ -1,0 +1,78 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/schema/server.json",
+  "name": "agent-lint",
+  "display_name": "Agent Lint",
+  "description": "Static analysis & quality scoring for AI coding agent context artifacts (AGENTS.md, CLAUDE.md, skills, rules, workflows, plans). Fully deterministic — no LLM, no database, no auth.",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agent-lint/agent-lint"
+  },
+  "license": "MIT",
+  "command": "npx",
+  "args": ["-y", "@agent-lint/mcp"],
+  "transport": "stdio",
+  "tools": [
+    {
+      "name": "analyze_artifact",
+      "description": "Analyze a single AI agent context artifact and return quality scores across 12 metrics"
+    },
+    {
+      "name": "analyze_workspace_artifacts",
+      "description": "Scan a workspace directory for AI agent artifacts with framework detection"
+    },
+    {
+      "name": "analyze_context_bundle",
+      "description": "Analyze multiple artifacts together for cross-artifact consistency"
+    },
+    {
+      "name": "prepare_artifact_fix_context",
+      "description": "Prepare context for an artifact improvement loop"
+    },
+    {
+      "name": "submit_client_assessment",
+      "description": "Submit a client LLM assessment with evidence-backed scores"
+    },
+    {
+      "name": "quality_gate_artifact",
+      "description": "Check if an artifact meets a target quality score"
+    },
+    {
+      "name": "suggest_patch",
+      "description": "Generate patch suggestions to improve an artifact"
+    },
+    {
+      "name": "validate_export",
+      "description": "Validate final artifact output for safety and correctness"
+    }
+  ],
+  "resources": [
+    {
+      "name": "scoring-policy",
+      "description": "Client-led scoring policy with 12 metrics and type-based weights"
+    },
+    {
+      "name": "artifact-specs",
+      "description": "Artifact type specifications with required sections and anti-patterns"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "analyze-artifact",
+      "description": "Guided artifact analysis prompt"
+    },
+    {
+      "name": "improve-artifact",
+      "description": "Guided artifact improvement prompt"
+    },
+    {
+      "name": "review-workspace",
+      "description": "Guided workspace review prompt"
+    }
+  ],
+  "categories": ["developer-tools", "code-quality", "static-analysis"],
+  "tags": ["ai-agents", "static-analysis", "quality-scoring", "agents-md", "claude-md", "mcp", "lint"],
+  "engines": {
+    "node": ">=18"
+  }
+}

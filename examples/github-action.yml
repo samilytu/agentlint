@@ -1,0 +1,24 @@
+name: Agent Lint
+
+on:
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".cursor/rules/**"
+      - ".windsurf/rules/**"
+      - ".github/copilot-instructions.md"
+      - "docs/**/*.md"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Analyze artifacts
+        run: npx -y @agent-lint/cli scan . --json --fail-below 70

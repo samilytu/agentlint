@@ -15,7 +15,9 @@ Fully deterministic. No LLM, no database, no auth.
 
 - TypeScript (strict)
 - pnpm monorepo with project references
-- Vitest for testing
+- tsup for bundling (ESM, `noExternal` for workspace deps)
+- tsc for type declarations (`emitDeclarationOnly: true`)
+- Vitest for testing (154 tests, 18 test files)
 - `@modelcontextprotocol/sdk` for MCP server
 
 ## Monorepo Structure
@@ -24,11 +26,13 @@ Fully deterministic. No LLM, no database, no auth.
 packages/
   shared/    → Common types, parser, conventions, schemas
   core/      → Deterministic analysis engine + 12-metric rules
-  mcp/       → MCP server (stdio transport)
-  cli/       → CLI interface
+  mcp/       → MCP server (stdio transport) — PUBLIC npm package
+  cli/       → CLI interface — PUBLIC npm package
 ```
 
 Dependency flow: `shared ← core ← mcp` and `shared ← core ← cli`
+
+Build flow: tsup bundles JS (shared+core inlined via `noExternal`) → tsc generates `.d.ts` only
 
 ## Rules
 
@@ -69,12 +73,25 @@ Dependency flow: `shared ← core ← mcp` and `shared ← core ← cli`
 
 ```bash
 pnpm install
-pnpm run typecheck      # tsc --build (all packages)
-pnpm run test           # vitest
-pnpm run mcp:stdio      # Run MCP server
-pnpm run mcp:inspector  # MCP Inspector
-pnpm run cli            # CLI
+pnpm run build           # tsup bundle + tsc declarations
+pnpm run typecheck       # tsc --build (all packages)
+pnpm run test            # vitest
+pnpm run mcp:stdio       # Run MCP server
+pnpm run mcp:inspector   # MCP Inspector
+pnpm run cli             # CLI
 ```
+
+## Publishing
+
+```bash
+pnpm run build                  # Build all packages
+npm pack --dry-run               # Verify package contents (in packages/mcp or packages/cli)
+# MCP: ~576 KB packed, ~3.7 MB unpacked
+# CLI: ~325 KB packed, ~2.0 MB unpacked
+```
+
+Published packages: `@agent-lint/mcp` and `@agent-lint/cli`
+Internal packages (bundled, not published): `@agent-lint/shared` and `@agent-lint/core`
 
 ## Reference Documents
 

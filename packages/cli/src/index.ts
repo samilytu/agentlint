@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 
+const nodeVersion = parseInt(process.versions.node.split(".")[0], 10);
+if (nodeVersion < 18) {
+  process.stderr.write(
+    `agent-lint requires Node.js >= 18. Current: ${process.versions.node}\n`
+  );
+  process.exit(1);
+}
+
 import { Command } from "commander";
 
 import { registerAnalyzeCommand } from "./commands/analyze.js";

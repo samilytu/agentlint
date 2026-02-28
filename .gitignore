@@ -23,3 +23,6 @@ pnpm-debug.log*
 # IDE / agent
 .sisyphus/
 .windsurf/
+
+# Windows artifacts
+NUL
