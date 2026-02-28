@@ -1,0 +1,28 @@
+{
+  "name": "@agent-lint/mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "agent-lint-mcp": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agent-lint/shared": "workspace:*",
+    "@agent-lint/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.26.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
