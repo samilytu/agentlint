@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.0] — Unreleased
+## [0.1.1] — 2026-03-01
+
+### Fixed
+
+- Add `createRequire` shim to ESM bundles so CJS dependencies (`gray-matter`) work correctly when installed via `npx`
+
+## [0.1.0] — 2026-02-28
 
 ### Added
 

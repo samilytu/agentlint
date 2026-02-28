@@ -12,8 +12,8 @@ Thank you for your interest in contributing to Agent Lint! This guide will help 
 ### Install & Build
 
 ```bash
-git clone https://github.com/agent-lint/agent-lint.git
-cd agent-lint
+git clone https://gitlab.com/bsamilozturk/agentlint.git
+cd agentlint
 pnpm install
 pnpm run build
 ```
@@ -42,8 +42,8 @@ packages/
 
 ### Published packages
 
-| Package | npm |
-|---------|-----|
+| Package           | npm       |
+| ----------------- | --------- |
 | `@agent-lint/mcp` | Published |
 | `@agent-lint/cli` | Published |
 
@@ -147,7 +147,7 @@ Test files live next to source: `packages/<pkg>/tests/*.test.ts`
 
 ## Questions?
 
-- Open a [GitHub Issue](https://github.com/agent-lint/agent-lint/issues)
+- Open a [GitLab Issue](https://gitlab.com/bsamilozturk/agentlint/-/issues)
 - Check `docs/great_plan.md` for the project roadmap
 
 ## License

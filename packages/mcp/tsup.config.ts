@@ -9,4 +9,7 @@ export default defineConfig({
   target: "node18",
   outDir: "dist",
   noExternal: ["@agent-lint/shared", "@agent-lint/core"],
+  banner: {
+    js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
+  },
 });

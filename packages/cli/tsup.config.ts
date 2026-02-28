@@ -10,6 +10,6 @@ export default defineConfig({
   outDir: "dist",
   noExternal: ["@agent-lint/shared", "@agent-lint/core"],
   banner: {
-    js: "#!/usr/bin/env node",
+    js: "#!/usr/bin/env node\nimport { createRequire } from 'module'; const require = createRequire(import.meta.url);",
   },
 });

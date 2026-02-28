@@ -6,7 +6,7 @@
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agent-lint/agent-lint"
+    "url": "https://gitlab.com/bsamilozturk/agentlint"
   },
   "license": "MIT",
   "command": "npx",

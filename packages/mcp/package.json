@@ -1,12 +1,36 @@
 {
   "name": "@agent-lint/mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "MIT",
-  "description": "MCP server for AI agent context artifact analysis and quality scoring",
-  "files": ["dist/", "LICENSE"],
+  "description": "MCP server for AI agent context artifact analysis and quality scoring. Deterministic, no LLM, no database.",
+  "author": "Agent Lint Contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/bsamilozturk/agentlint.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://gitlab.com/bsamilozturk/agentlint#readme",
+  "bugs": {
+    "url": "https://gitlab.com/bsamilozturk/agentlint/-/issues"
+  },
+  "keywords": [
+    "mcp",
+    "ai-agents",
+    "static-analysis",
+    "quality-scoring",
+    "agents-md",
+    "claude-md",
+    "lint",
+    "model-context-protocol"
+  ],
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
   "bin": {
-    "agent-lint-mcp": "./dist/bin.js"
+    "agent-lint-mcp": "dist/bin.js"
   },
   "exports": {
     ".": {

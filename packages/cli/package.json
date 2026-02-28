@@ -1,12 +1,36 @@
 {
   "name": "@agent-lint/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "MIT",
-  "description": "CLI for AI agent context artifact analysis and quality scoring",
-  "files": ["dist/", "LICENSE"],
+  "description": "CLI for AI agent context artifact analysis and quality scoring. Deterministic, no LLM, no database.",
+  "author": "Agent Lint Contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/bsamilozturk/agentlint.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://gitlab.com/bsamilozturk/agentlint#readme",
+  "bugs": {
+    "url": "https://gitlab.com/bsamilozturk/agentlint/-/issues"
+  },
+  "keywords": [
+    "cli",
+    "ai-agents",
+    "static-analysis",
+    "quality-scoring",
+    "agents-md",
+    "claude-md",
+    "lint",
+    "ci-cd"
+  ],
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
   "bin": {
-    "agent-lint": "./dist/index.js"
+    "agent-lint": "dist/index.js"
   },
   "exports": {
     ".": {

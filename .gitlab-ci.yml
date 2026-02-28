@@ -1,0 +1,48 @@
+stages:
+  - test
+  - publish
+
+variables:
+  PNPM_VERSION: "9"
+
+# ---------------------------------------------------------------------------
+# Test job — runs on every push and merge request
+# ---------------------------------------------------------------------------
+test:
+  stage: test
+  image: node:20
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@${PNPM_VERSION} --activate
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm run build
+    - pnpm run typecheck
+    - pnpm run test
+    - pnpm run lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ---------------------------------------------------------------------------
+# Publish job — runs only on version tags (v*)
+# Requires NPM_TOKEN CI/CD variable set in GitLab project settings.
+# ---------------------------------------------------------------------------
+publish:
+  stage: publish
+  image: node:20
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@${PNPM_VERSION} --activate
+    - pnpm install --frozen-lockfile
+    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+  script:
+    - pnpm run build
+    - pnpm run test
+    - cd packages/mcp && pnpm publish --no-git-checks --access public && cd ../..
+    - cd packages/cli && pnpm publish --no-git-checks --access public && cd ../..
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  environment:
+    name: npm
+    url: https://www.npmjs.com/package/@agent-lint/mcp
