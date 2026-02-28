@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "description": "MCP server for AI agent context artifact analysis and quality scoring",
-  "files": ["dist/", "README.md", "LICENSE"],
+  "files": ["dist/", "LICENSE"],
   "bin": {
     "agent-lint-mcp": "./dist/bin.js"
   },
