@@ -530,25 +530,25 @@ Mevcut 8 tool'u incele ve sadeleştir:
 
 ### 6.2 — Opsiyonel Uzantılar
 
-- [ ] **Custom Rule API**: Kullanıcı kendi lint kurallarını `.agentlint/rules/` altına ekleyebilir
-- [ ] **Plugin Sistemi**: Rule paketi olarak npm'den yüklenebilir kurallar
-- [ ] **Watch Modu**: Dosya değişikliklerinde otomatik re-analyze
+- [x] **Custom Rule API**: Kullanıcı kendi lint kurallarını `.agentlint/rules/` altına ekleyebilir
+- [x] **Plugin Sistemi**: Rule paketi olarak npm'den yüklenebilir kurallar
+- [x] **Watch Modu**: Dosya değişikliklerinde otomatik re-analyze
 - [ ] **VSCode Extension**: Native MCP yerine doğrudan extension (ileride)
 
 ### 6.3 — Topluluk & Ekosistem
 
-- [ ] Contributing guide (`CONTRIBUTING.md`)
-- [ ] Issue template'leri
-- [ ] GitHub Actions CI pipeline (test + publish)
-- [ ] npm provenance (sigstore)
-- [ ] Semantic versioning + changesets
+- [x] Contributing guide (`CONTRIBUTING.md`)
+- [x] Issue template'leri
+- [x] GitHub Actions CI pipeline (test + publish)
+- [x] npm provenance (sigstore)
+- [x] Semantic versioning + changesets
 
 ### 6.4 — Faz 6 Doğrulama Kontrol Listesi
 
 - [x] HTTP transport çalışıyor (isteğe bağlı)
-- [ ] Custom rule yüklenebiliyor
-- [ ] CI pipeline yeşil
-- [ ] npm publish otomatik (tag-triggered)
+- [x] Custom rule yüklenebiliyor
+- [x] CI pipeline yeşil
+- [x] npm publish otomatik (tag-triggered)
 
 ---
 
