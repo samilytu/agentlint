@@ -1,6 +1,6 @@
 {
   "name": "agent-lint",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "build": "pnpm --filter @agent-lint/shared run build && pnpm --filter @agent-lint/core run build && pnpm --filter @agent-lint/mcp run build && pnpm --filter @agent-lint/cli run build && tsc --build --force",

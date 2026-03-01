@@ -1,9 +1,9 @@
 {
   "name": "@agent-lint/cli",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "type": "module",
   "license": "MIT",
-  "description": "CLI for AI agent context artifact analysis and quality scoring. Deterministic, no LLM, no database.",
+  "description": "CLI for AI agent context artifact orchestration. Auto-detect IDEs, scan workspaces, generate fix reports. No LLM, no database.",
   "author": "Agent Lint Contributors",
   "repository": {
     "type": "git",
@@ -17,8 +17,8 @@
   "keywords": [
     "cli",
     "ai-agents",
-    "static-analysis",
-    "quality-scoring",
+    "context-artifacts",
+    "orchestrator",
     "agents-md",
     "claude-md",
     "lint",

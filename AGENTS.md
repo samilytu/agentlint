@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Agent Lint is an OSS local-first static analysis tool for AI coding agent context artifacts:
+Agent Lint is a meta-agent orchestrator for AI coding agent context artifacts:
 
 - AGENTS.md / CLAUDE.md
 - Skills
@@ -10,7 +10,9 @@ Agent Lint is an OSS local-first static analysis tool for AI coding agent contex
 - Workflows
 - Plans
 
-Fully deterministic. No LLM, no database, no auth.
+It provides guidelines, action plans, and maintenance rules to client-side LLMs.
+The client LLM does all file reading and writing — Agent Lint never writes files.
+No LLM server-side, no database, no auth.
 
 ## Stack
 
@@ -18,7 +20,7 @@ Fully deterministic. No LLM, no database, no auth.
 - pnpm monorepo with project references
 - tsup for bundling (ESM, `noExternal` for workspace deps)
 - tsc for type declarations (`emitDeclarationOnly: true`)
-- Vitest for testing (154 tests, 18 test files)
+- Vitest for testing (106 tests, 12 test files)
 - `@modelcontextprotocol/sdk` for MCP server
 
 ## Monorepo Structure
@@ -26,8 +28,8 @@ Fully deterministic. No LLM, no database, no auth.
 ```
 packages/
   shared/    → Common types, parser, conventions, schemas
-  core/      → Deterministic analysis engine + 12-metric rules
-  mcp/       → MCP server (stdio transport) — PUBLIC npm package
+  core/      → Guidelines, workspace discovery, plan building
+  mcp/       → MCP server (stdio + HTTP transport) — PUBLIC npm package
   cli/       → CLI interface — PUBLIC npm package
 ```
 
@@ -40,36 +42,39 @@ Build flow: tsup bundles JS (shared+core inlined via `noExternal`) → tsc gener
 - Keep strict typing; no `any`.
 - Never auto-execute destructive commands.
 - `console.log()` is BANNED — all logs to stderr.
-- MCP server produces data, not instructions. Client decides what to do.
+- MCP server provides guidance, not instructions. Client LLM decides what to do.
 - No state: no DB, no cache, no singletons. Every call is stateless.
-- No unguarded file writes. Only `apply_patches` with hash-guard + allowlist + backup.
+- Zero file writes from MCP server. Client LLM handles all file operations.
 - Minimum dependencies. Every new dep needs justification. Package < 5MB.
 
-## MCP Path (LLM-free, client-led scoring)
+## MCP Tools (4)
 
-1. Sanitize user input.
-2. Expose client-led scoring policy (metrics + weights + evidence schema) and artifact guidance resources.
-3. Start fix loops with `prepare_artifact_fix_context`, then let MCP client LLM scan repository and produce evidence-backed scores.
-4. Run `submit_client_assessment`, then low-weight server guardrails (safety/export/checklist) with hybrid final score.
-5. Iterate rewrite → `quality_gate_artifact` (clientAssessment required by default) until target score and guardrails pass.
+| Tool                                 | Purpose                                                |
+| ------------------------------------ | ------------------------------------------------------ |
+| `agentlint_get_guidelines`           | Full guidelines for creating/updating an artifact type |
+| `agentlint_plan_workspace_autofix`   | Scan workspace, return step-by-step fix plan           |
+| `agentlint_quick_check`              | Check if code changes require context artifact updates |
+| `agentlint_emit_maintenance_snippet` | Persistent rule snippet for IDE clients                |
+
+## MCP Resources (3)
+
+| Resource                        | Purpose                                             |
+| ------------------------------- | --------------------------------------------------- |
+| `agentlint://guidelines/{type}` | Same as get_guidelines tool, as a readable resource |
+| `agentlint://template/{type}`   | Skeleton template for new artifacts                 |
+| `agentlint://path-hints/{type}` | File discovery patterns per IDE client              |
+
+## CLI Commands (3)
+
+| Command             | Purpose                                    |
+| ------------------- | ------------------------------------------ |
+| `agent-lint init`   | Set up MCP config for detected IDE clients |
+| `agent-lint doctor` | Scan workspace and generate fix report     |
+| `agent-lint prompt` | Print copy-paste prompt for IDE chat       |
 
 ## Quality Metrics (12)
 
 `clarity`, `specificity`, `scope-control`, `completeness`, `actionability`, `verifiability`, `safety`, `injection-resistance`, `secret-hygiene`, `token-efficiency`, `platform-fit`, `maintainability`
-
-## MCP Tools (9)
-
-| Tool                           | Purpose                                               |
-| ------------------------------ | ----------------------------------------------------- |
-| `analyze_artifact`             | Single artifact analysis                              |
-| `analyze_workspace_artifacts`  | Workspace scanning + framework detection              |
-| `analyze_context_bundle`       | Multi-artifact consistency analysis                   |
-| `prepare_artifact_fix_context` | Fix loop context                                      |
-| `submit_client_assessment`     | Submit client LLM assessment                          |
-| `quality_gate_artifact`        | Quality gate (target score check)                     |
-| `suggest_patch`                | Patch suggestion                                      |
-| `apply_patches`                | Guarded local patch apply (hash + allowlist + backup) |
-| `validate_export`              | Final output validation                               |
 
 ## Development
 
@@ -88,8 +93,6 @@ pnpm run cli             # CLI
 ```bash
 pnpm run build                  # Build all packages
 npm pack --dry-run               # Verify package contents (in packages/mcp or packages/cli)
-# MCP: ~576 KB packed, ~3.7 MB unpacked
-# CLI: ~325 KB packed, ~2.0 MB unpacked
 ```
 
 Published packages: `@agent-lint/mcp` and `@agent-lint/cli`
@@ -97,6 +100,6 @@ Internal packages (bundled, not published): `@agent-lint/shared` and `@agent-lin
 
 ## Reference Documents
 
-- `docs/great_plan.md` — Master 7-phase plan
+- `docs/great_plan.md` — Master plan (pre-pivot reference)
 - `docs/dikkat_edilecekler.md` — Risks and pitfalls
 - `docs/dos_and_donts.md` — Rules and constraints

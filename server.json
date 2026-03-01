@@ -2,8 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/schema/server.json",
   "name": "agent-lint",
   "display_name": "Agent Lint",
-  "description": "Static analysis & quality scoring for AI coding agent context artifacts (AGENTS.md, CLAUDE.md, skills, rules, workflows, plans). Fully deterministic — no LLM, no database, no auth.",
-  "version": "0.1.0",
+  "description": "Meta-agent orchestrator for AI coding agent context artifacts (AGENTS.md, CLAUDE.md, skills, rules, workflows, plans). Provides guidelines, action plans, and maintenance rules — the client LLM does all file editing.",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "https://gitlab.com/bsamilozturk/agentlint"
@@ -14,92 +14,39 @@
   "transport": "stdio",
   "tools": [
     {
-      "name": "analyze_artifact",
-      "description": "Analyze a single AI agent context artifact and return quality scores across 12 metrics"
+      "name": "agentlint_get_guidelines",
+      "description": "Returns comprehensive Markdown guidelines for creating or updating a context artifact type (agents, skills, rules, workflows, plans)"
     },
     {
-      "name": "analyze_workspace_artifacts",
-      "description": "Scan a workspace directory for AI agent artifacts with framework detection"
+      "name": "agentlint_plan_workspace_autofix",
+      "description": "Scans workspace for all context artifact files, identifies gaps, and returns a step-by-step fix plan"
     },
     {
-      "name": "analyze_context_bundle",
-      "description": "Analyze multiple artifacts together for cross-artifact consistency"
+      "name": "agentlint_quick_check",
+      "description": "Checks whether recent code changes require updates to context artifacts"
     },
     {
-      "name": "prepare_artifact_fix_context",
-      "description": "Prepare context for an artifact improvement loop"
-    },
-    {
-      "name": "submit_client_assessment",
-      "description": "Submit a client LLM assessment with evidence-backed scores"
-    },
-    {
-      "name": "quality_gate_artifact",
-      "description": "Check if an artifact meets a target quality score"
-    },
-    {
-      "name": "suggest_patch",
-      "description": "Generate patch suggestions to improve an artifact"
-    },
-    {
-      "name": "apply_patches",
-      "description": "Apply patch content to local files with hash-guard, extension allowlist, and backup protection"
-    },
-    {
-      "name": "validate_export",
-      "description": "Validate final artifact output for safety and correctness"
+      "name": "agentlint_emit_maintenance_snippet",
+      "description": "Returns a persistent rule snippet for IDE clients to enable automatic context maintenance"
     }
   ],
   "resources": [
     {
-      "name": "agentlint-quality-metrics",
-      "description": "Quality and scoring metrics for each artifact type"
+      "name": "agentlint-guidelines",
+      "description": "Comprehensive guidelines for creating or updating AI agent context artifacts"
     },
     {
-      "name": "agentlint-prompt-pack",
-      "description": "Prompt pack text used for artifact creation and fixing"
+      "name": "agentlint-template",
+      "description": "Skeleton template for creating new context artifacts"
     },
     {
-      "name": "agentlint-prompt-template",
-      "description": "Judge prompt template used for analysis"
-    },
-    {
-      "name": "agentlint-artifact-path-hints",
-      "description": "Cross-client file path aliases and discovery hints"
-    },
-    {
-      "name": "agentlint-artifact-spec",
-      "description": "Structured specification and quality requirements for artifact creation"
-    },
-    {
-      "name": "agentlint-scoring-policy",
-      "description": "Client-led metric weighting and hybrid score formula by artifact type"
-    },
-    {
-      "name": "agentlint-assessment-schema",
-      "description": "Schema guidance for submit_client_assessment payloads"
-    },
-    {
-      "name": "agentlint-improvement-playbook",
-      "description": "Iteration guidance for client-driven artifact improvement loops"
+      "name": "agentlint-path-hints",
+      "description": "File path patterns and discovery hints for finding artifacts across IDE clients"
     }
   ],
-  "prompts": [
-    {
-      "name": "artifact_create_prompt",
-      "description": "Guided prompt to create AGENTS/skills/rules/workflows/plans content with Agent Lint quality criteria"
-    },
-    {
-      "name": "artifact_review_prompt",
-      "description": "Prompt for reviewing existing artifact content and enforcing Agent Lint quality standards"
-    },
-    {
-      "name": "artifact_fix_prompt",
-      "description": "Prompt for fixing low-scoring artifact content using Agent Lint quality metrics and patch flow"
-    }
-  ],
-  "categories": ["developer-tools", "code-quality", "static-analysis"],
-  "tags": ["ai-agents", "static-analysis", "quality-scoring", "agents-md", "claude-md", "mcp", "lint"],
+  "prompts": [],
+  "categories": ["developer-tools", "code-quality"],
+  "tags": ["ai-agents", "context-artifacts", "agents-md", "claude-md", "mcp", "orchestrator"],
   "engines": {
     "node": ">=18"
   }

@@ -7,11 +7,11 @@
 
 # Agent Lint
 
-### **The Linter for Your AI Coding Agents.**
+### **The Meta-Agent Orchestrator for Your AI Coding Agents.**
 
-Your code has ESLint. Your agents deserve **Agent Lint**.
+Your agents write code. Agent Lint makes sure they have the **right context** to do it well.
 
-[Quick Start](#-quick-start) · [Installation](#-installation) · [CLI Usage](#-cli-usage) · [MCP Tools](#-mcp-tools) · [CI/CD](#-cicd-integration)
+[Quick Start](#-quick-start) · [MCP Tools](#-mcp-tools) · [CLI](#-cli) · [Installation](#-installation)
 
 </div>
 
@@ -27,11 +27,12 @@ Yet most teams either:
 
 - Write these files once and never revisit them
 - Let their coding agent generate its own context — producing **generic, bloated, unfocused instructions**
-- Have no way to measure whether their context files actually _help_ or just waste tokens
+- Have no standard for what a good `AGENTS.md` or rules file looks like
+- Forget to update context when the codebase changes
 
-There's no ESLint for agent context. No Prettier. No quality gate.
+**Agent Lint solves this.**
 
-**Until now.**
+It acts as a **meta-agent orchestrator** — guiding your AI coding agent to create, maintain, and improve context artifacts using curated best practices from Cursor, Windsurf, Claude, VS Code, and community standards.
 
 ---
 
@@ -39,105 +40,67 @@ There's no ESLint for agent context. No Prettier. No quality gate.
 <tr>
 <td width="50%">
 
-### ❌ Without Agent Lint
+### Without Agent Lint
 
 &nbsp;
 
-❌ Vague, generic instructions that **waste thousands of tokens** every prompt
-
-❌ Coding agents write their own context files — output is often **repetitive and low-quality**
-
-❌ No way to know if your `AGENTS.md` actually **improves** agent behavior
-
-❌ Prompt injection vulnerabilities and **leaked secrets** go undetected
-
-❌ Every developer writes context files differently — **zero consistency**
-
-❌ No quality gate in CI/CD — bad context ships to production
+- Vague, generic instructions that **waste thousands of tokens**
+- Context files become **stale** as the codebase evolves
+- Every developer writes context files differently — **zero consistency**
+- No way to know if your `AGENTS.md` actually follows **best practices**
+- Agents generate their own rules — often **repetitive and low-quality**
 
 </td>
 <td width="50%">
 
-### ✅ With Agent Lint
+### With Agent Lint
 
 &nbsp;
 
-✅ **12-metric scoring** against curated best practices from official sources
-
-✅ Instantly catch token waste, vague instructions, and security issues
-
-✅ **Deterministic results** — same file, same score, every time
-
-✅ Works as **MCP server** in your IDE or **CLI** in your terminal
-
-✅ Scoring rules compiled from **official platform documentation** — not AI-generated
-
-✅ Drop into CI/CD — **lint context artifacts like you lint code**
+- **Comprehensive guidelines** for every artifact type — what to include, what to avoid
+- **Workspace scanning** detects missing and incomplete artifacts automatically
+- **Quick check** after every structural change — knows when context needs updating
+- **Persistent maintenance rules** keep your agent disciplined across sessions
+- Works with **every major IDE** — Cursor, Windsurf, VS Code, Claude
 
 </td>
 </tr>
 </table>
 
-> **Your agents are only as good as the context you give them.**
-> Stop guessing. Start linting.
+---
+
+## Quick Start
+
+Set up Agent Lint in your project in 2 minutes:
+
+```bash
+# 1. Auto-detect your IDE and create MCP config
+npx @agent-lint/cli init
+
+# 2. Scan your workspace and generate a fix report
+npx @agent-lint/cli doctor
+
+# 3. Get a copy-paste prompt for your IDE chat
+npx @agent-lint/cli prompt
+```
+
+Paste the prompt into your IDE's AI chat. Your coding agent will use Agent Lint's MCP tools to scan, create, and fix all context artifacts — with your confirmation before each change.
+
+**No API keys. No database. No LLM on the server side. Everything runs locally.**
 
 ---
 
-## 🚀 Quick Start
+## Installation
 
-Score any context artifact in one command:
-
-```bash
-npx @agent-lint/cli score AGENTS.md
-```
-
-```
-91
-```
-
-That's it. No install, no config, no API keys.
-
-### See What's Wrong
+### Automatic (Recommended)
 
 ```bash
-npx @agent-lint/cli analyze AGENTS.md
+npx @agent-lint/cli init
 ```
 
-```
-Artifact: AGENTS.md
-Type:     agents
-Score:    91
-Dimensions: clarity=95, safety=86, tokenEfficiency=95, completeness=89
+This auto-detects your IDE (Cursor, Windsurf, VS Code, Claude) and creates the appropriate MCP config file.
 
-Warnings:
-  - Potential shell injection pattern detected.
-```
-
-### Scan Your Entire Workspace
-
-```bash
-npx @agent-lint/cli scan .
-```
-
-```
-Path                              Type       Score
---------------------------------- ---------- -----
-AGENTS.md                         agents       91
-.cursor/rules/code-style.md       rules        78
-docs/deployment-plan.md           plans        65
-skills/react-patterns.md          skills       82
-
-Artifacts: 4
-Average score: 79
-```
-
----
-
-## 📦 Installation
-
-### MCP Server (Recommended)
-
-Add Agent Lint directly into your AI coding assistant. It scores and improves your context artifacts **while you work**.
+### Manual Setup
 
 <details open>
 <summary><b>Cursor</b></summary>
@@ -147,7 +110,7 @@ Add to `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "agent-lint": {
+    "agentlint": {
       "command": "npx",
       "args": ["-y", "@agent-lint/mcp"]
     }
@@ -160,12 +123,31 @@ Add to `.cursor/mcp.json`:
 <details>
 <summary><b>Windsurf</b></summary>
 
-Add to your Windsurf MCP config:
+Add to `.windsurf/mcp_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "agent-lint": {
+    "agentlint": {
+      "command": "npx",
+      "args": ["-y", "@agent-lint/mcp"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><b>VS Code / GitHub Copilot</b></summary>
+
+Add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "agentlint": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "@agent-lint/mcp"]
     }
@@ -183,7 +165,7 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "agent-lint": {
+    "agentlint": {
       "command": "npx",
       "args": ["-y", "@agent-lint/mcp"]
     }
@@ -194,216 +176,135 @@ Add to `claude_desktop_config.json`:
 </details>
 
 <details>
-<summary><b>VS Code / GitHub Copilot</b></summary>
-
-Add to your VS Code `settings.json`:
-
-```json
-{
-  "mcp": {
-    "servers": {
-      "agent-lint": {
-        "command": "npx",
-        "args": ["-y", "@agent-lint/mcp"]
-      }
-    }
-  }
-}
-```
-
-</details>
-
-### CLI
+<summary><b>Claude Code CLI</b></summary>
 
 ```bash
-npx @agent-lint/cli analyze AGENTS.md
-
-npm install -g @agent-lint/cli
-agent-lint analyze AGENTS.md
-```
-
----
-
-## 💡 CLI Usage
-
-```bash
-# Score a file (just the number)
-agent-lint score AGENTS.md
-
-# Full analysis with findings and warnings
-agent-lint analyze AGENTS.md
-
-# Scan entire project
-agent-lint scan .
-
-# JSON output for programmatic use
-agent-lint analyze AGENTS.md --json
-
-# CI mode — fail if quality drops below threshold
-agent-lint analyze AGENTS.md --fail-below 70
-
-# Verbose — see all 12 metric scores
-agent-lint analyze AGENTS.md --verbose
-
-# Quiet — just pass/fail, no noise
-agent-lint scan . --quiet --fail-below 60
-
-# Specify artifact type explicitly
-agent-lint analyze my-rules.md --type rules
-
-# Scan with file limit
-agent-lint scan . --max-files 10
-```
-
-<details>
-<summary><b>Full CLI Reference</b></summary>
-
-```
-Usage: agent-lint [options] [command]
-
-Commands:
-  analyze <path>     Analyze a single artifact file
-  scan [dir]         Scan workspace for artifact files
-  score <path>       Output only the quality score
-
-Options:
-  --json             Output as JSON
-  --verbose          Show all metric details
-  --quiet            Suppress operational logs
-  --fail-below <n>   Exit code 1 if score < n
-  --type <type>      agents | skills | rules | workflows | plans
-  --max-files <n>    Limit files to scan
-  -V, --version      Show version
-  -h, --help         Show help
+claude mcp add agentlint -- npx -y @agent-lint/mcp
 ```
 
 </details>
 
 ---
 
-## 📊 12 Quality Metrics
+## MCP Tools
 
-Every artifact is scored across **12 dimensions** — curated from official platform documentation, security research, and production-tested best practices:
+Agent Lint provides **4 MCP tools** that your coding agent calls automatically:
 
-| Metric                   | What It Measures                                 |
-| :----------------------- | :----------------------------------------------- |
-| **Clarity**              | Are instructions clear and unambiguous?          |
-| **Specificity**          | Is guidance detailed enough to act on?           |
-| **Scope Control**        | Are boundaries and limitations well-defined?     |
-| **Completeness**         | Are all necessary topics and edge cases covered? |
-| **Actionability**        | Can instructions be directly followed?           |
-| **Verifiability**        | Can compliance be objectively verified?          |
-| **Safety**               | Are there proper guardrails and constraints?     |
-| **Injection Resistance** | Is the artifact resistant to prompt injection?   |
-| **Secret Hygiene**       | Are there any leaked secrets, keys, or tokens?   |
-| **Token Efficiency**     | Is it concise without sacrificing quality?       |
-| **Platform Fit**         | Does it align with the target platform?          |
-| **Maintainability**      | How easy is it to update and maintain?           |
+| Tool                                 | What It Does                                                                                                                                                      |
+| :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentlint_get_guidelines`           | Returns comprehensive guidelines for creating or updating any artifact type — mandatory sections, do/don't lists, anti-patterns, templates, and quality checklist |
+| `agentlint_plan_workspace_autofix`   | Scans your workspace, discovers all context artifacts, identifies missing files and incomplete sections, and returns a step-by-step fix plan                      |
+| `agentlint_quick_check`              | After structural changes (new modules, config changes, dependency updates), checks if context artifacts need updating                                             |
+| `agentlint_emit_maintenance_snippet` | Returns a persistent rule snippet for your IDE that keeps your agent maintaining context automatically                                                            |
 
-> **These aren't arbitrary rules.** Every metric is backed by real-world evaluation criteria compiled from Cursor, Windsurf, Claude, GitHub Copilot, and community-driven best practices.
+### MCP Resources
+
+| Resource                        | Content                                       |
+| :------------------------------ | :-------------------------------------------- |
+| `agentlint://guidelines/{type}` | Full guidelines for an artifact type          |
+| `agentlint://template/{type}`   | Skeleton template for creating a new artifact |
+| `agentlint://path-hints/{type}` | File discovery patterns per IDE client        |
+
+### Example Prompts
+
+```
+Create an AGENTS.md for this project following best practices.
+```
+
+```
+Scan this workspace and fix all context artifacts.
+```
+
+```
+Set up automatic context maintenance for Cursor.
+```
+
+Your agent calls the appropriate Agent Lint tools, gets structured guidelines, and creates or fixes artifacts — asking for your confirmation before saving.
 
 ---
 
-## 🔧 MCP Tools
+## CLI
 
-When running as an MCP server, Agent Lint provides **9 tools** your coding agent can use directly:
+```bash
+# Set up MCP config for detected IDE clients
+agent-lint init
 
-| Tool                           | What It Does                                               |
-| :----------------------------- | :--------------------------------------------------------- |
-| `analyze_artifact`             | Score a single artifact across 12 quality metrics          |
-| `analyze_workspace_artifacts`  | Discover and score all context artifacts in your workspace |
-| `analyze_context_bundle`       | Check consistency across multiple related artifacts        |
-| `prepare_artifact_fix_context` | Start an evidence-based improvement loop                   |
-| `submit_client_assessment`     | Submit quality scores with metric-level evidence           |
-| `quality_gate_artifact`        | Pass/fail gate against a target quality threshold          |
-| `suggest_patch`                | Generate targeted improvement suggestions                  |
-| `apply_patches`                | Apply fixes with SHA-256 hash-guard + backup protection    |
-| `validate_export`              | Final safety validation before export                      |
+# Scan workspace, generate .agentlint-report.md
+agent-lint doctor
 
-**Example prompt to your agent:**
-
-```
-Analyze my AGENTS.md with agent-lint and fix any issues found.
-Target score: 85+
+# Print a copy-paste prompt for your IDE chat
+agent-lint prompt
 ```
 
-Your coding agent will use Agent Lint's MCP tools to analyze, score, and iteratively improve the artifact — all within your IDE.
+| Command             | Purpose                                   |
+| :------------------ | :---------------------------------------- |
+| `agent-lint init`   | Auto-detect IDEs, create MCP config files |
+| `agent-lint doctor` | Scan workspace, generate fix report       |
+| `agent-lint prompt` | Output a copy-paste prompt for IDE chat   |
 
----
+### Doctor Options
 
-## 🔄 CI/CD Integration
-
-Lint your agent context on every pull request — just like you lint code:
-
-### GitHub Actions
-
-```yaml
-name: Agent Lint
-
-on:
-  pull_request:
-    paths:
-      - "AGENTS.md"
-      - "CLAUDE.md"
-      - ".cursor/rules/**"
-      - ".windsurf/rules/**"
-      - ".github/copilot-instructions.md"
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: npx -y @agent-lint/cli scan . --json --fail-below 70
-```
-
-### GitLab CI
-
-```yaml
-agent-lint:
-  image: node:20
-  script:
-    - npx -y @agent-lint/cli scan . --json --fail-below 70
-  rules:
-    - changes:
-        - AGENTS.md
-        - CLAUDE.md
+```bash
+agent-lint doctor --stdout    # Print to stdout instead of file
+agent-lint doctor --json      # JSON output for programmatic use
 ```
 
 ---
 
-## 📁 Supported Artifacts
+## Supported Artifacts
 
 | Type          | File Patterns                                               |
 | :------------ | :---------------------------------------------------------- |
 | **Agents**    | `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md` |
 | **Rules**     | `.cursor/rules/*.md`, `.windsurf/rules/*.md`                |
-| **Skills**    | `skills/*.md`                                               |
-| **Workflows** | `workflows/*.md`, `docs/workflows/*.md`                     |
-| **Plans**     | `plans/*.md`, `docs/plans/*.md`                             |
+| **Skills**    | `.cursor/skills/*/SKILL.md`, `.windsurf/skills/*/SKILL.md`  |
+| **Workflows** | `.cursor/workflows/*.md`, `.windsurf/workflows/*.md`        |
+| **Plans**     | `docs/*.md`, `.windsurf/plans/*.md`                         |
 
 ---
 
-## 🧠 Design Principles
+## How It Works
 
-| Principle                  | Detail                                                              |
-| :------------------------- | :------------------------------------------------------------------ |
-| **No LLM**                 | Fully deterministic. No API calls, no tokens, no cost.              |
-| **No State**               | Every call is stateless. No database, no cache.                     |
-| **No File Writes**         | Read-only by default. `apply_patches` requires explicit hash-guard. |
-| **Minimum Deps**           | Published packages < 5 MB.                                          |
-| **Data, Not Instructions** | MCP server provides data — your agent decides what to do.           |
+```
+You: "Create AGENTS.md for this project"
+  |
+  v
+Your Agent calls: agentlint_get_guidelines({ type: "agents" })
+  |
+  v
+Agent Lint returns: Mandatory sections, do/don't lists, template, anti-patterns
+  |
+  v
+Your Agent: Scans your codebase, fills in the template, asks for confirmation
+  |
+  v
+You: Approve -> AGENTS.md created with proper structure
+```
+
+**Agent Lint never writes files.** It provides the knowledge. Your agent does the work. You stay in control.
 
 ---
 
-## 🏗️ Architecture
+## Design Principles
+
+| Principle                      | Detail                                                                |
+| :----------------------------- | :-------------------------------------------------------------------- |
+| **Zero File Writes**           | MCP server never writes files. Client LLM handles all edits.          |
+| **No LLM Server-Side**         | No API keys, no tokens, no cost. Fully deterministic.                 |
+| **Stateless**                  | Every call is independent. No database, no cache.                     |
+| **Minimum Deps**               | Published packages < 5 MB.                                            |
+| **Guidance, Not Instructions** | Provides guidelines and plans — your agent decides how to apply them. |
+
+---
+
+## Architecture
 
 ```
 packages/
-  shared/    → Common types, parser, schemas
-  core/      → Deterministic analysis engine + 12-metric rules
-  mcp/       → MCP server (stdio transport)
-  cli/       → CLI interface
+  shared/    -> Common types, parser, conventions, schemas
+  core/      -> Guidelines, workspace discovery, plan building
+  mcp/       -> MCP server (stdio + HTTP transport)
+  cli/       -> CLI interface (init, doctor, prompt)
 ```
 
 | Package           | Status                                                                                                                |
@@ -413,14 +314,12 @@ packages/
 
 ---
 
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup.
+## Contributing
 
 ```bash
 pnpm install
 pnpm run build
-pnpm run test          # 154 tests
+pnpm run test          # 140+ tests
 pnpm run typecheck
 ```
 
@@ -434,8 +333,8 @@ pnpm run typecheck
 
 <div align="center">
 
-**Your code has ESLint. Your agents deserve Agent Lint.**
+**Your agents are only as good as the context you give them.**
 
-**[Get Started →](#-quick-start)**
+**[Get Started ->](#quick-start)**
 
 </div>
