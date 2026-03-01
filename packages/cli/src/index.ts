@@ -8,10 +8,10 @@ if (nodeVersion < 18) {
 
 import { Command } from "commander";
 
-import { registerAnalyzeCommand } from "./commands/analyze.js";
-import { registerScanCommand } from "./commands/scan.js";
-import { registerScoreCommand } from "./commands/score.js";
-import { parseFailBelowOption, redirectLogsToStderr } from "./utils.js";
+import { registerInitCommand } from "./commands/init.js";
+import { registerDoctorCommand } from "./commands/doctor.js";
+import { registerPromptCommand } from "./commands/prompt.js";
+import { redirectLogsToStderr } from "./utils.js";
 
 async function main(): Promise<void> {
   redirectLogsToStderr();
@@ -20,19 +20,13 @@ async function main(): Promise<void> {
 
   program
     .name("agent-lint")
-    .description("Static analysis and scoring for AI agent context artifacts")
-    .version("0.1.0")
-    .enablePositionalOptions()
-    .passThroughOptions()
-    .option("--json", "Output as JSON")
-    .option("--quiet", "Suppress operational logs")
-    .option("--verbose", "Enable verbose output")
-    .option("--fail-below <score>", "Fail with exit code 1 if score is below threshold", parseFailBelowOption)
+    .description("Meta-agent orchestrator for AI coding agent context artifacts")
+    .version("0.2.0")
     .showHelpAfterError();
 
-  registerAnalyzeCommand(program);
-  registerScanCommand(program);
-  registerScoreCommand(program);
+  registerInitCommand(program);
+  registerDoctorCommand(program);
+  registerPromptCommand(program);
 
   const argv = process.argv.slice(2);
   const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;

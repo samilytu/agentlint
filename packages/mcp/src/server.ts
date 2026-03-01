@@ -8,15 +8,13 @@ export const DEFAULT_MCP_SERVER_NAME = "agentlint";
 
 const DEFAULT_MCP_INSTRUCTIONS =
   [
-    "Agent Lint MCP focuses on AGENTS.md, CLAUDE.md, skills, rules, workflows, and plans artifacts.",
-    "Primary worker is MCP client LLM: scan repository, evaluate artifacts with evidence, rewrite content, then re-run quality loop.",
-    "Fix/update flow: first call prepare_artifact_fix_context to get weights, required flow, and assessment template.",
-    "Policy-first flow: read scoring-policy + assessment-schema resources, compute client metric scores, call submit_client_assessment, then run quality_gate_artifact with candidateContent and clientAssessment.",
-    "quality_gate_artifact requires clientAssessment by default in client-led mode.",
-    "Use analyze_artifact or analyze_context_bundle as advisory diagnostics when deeper server-side signals are needed.",
-    "Before final output ensure validate_export passes.",
-    "Use suggest_patch for selective segment-level merges when needed.",
-    "Never auto-run destructive actions; keep recommendations verifiable and repository-specific.",
+    "Agent Lint is a meta-agent orchestrator for AI coding agent context artifacts (AGENTS.md, CLAUDE.md, skills, rules, workflows, plans).",
+    "It provides guidelines, action plans, and maintenance rules — the client LLM does all file reading and writing.",
+    "Call agentlint_get_guidelines before creating or updating any context artifact.",
+    "Call agentlint_plan_workspace_autofix to discover all artifacts in a workspace and get a step-by-step fix plan.",
+    "Call agentlint_quick_check after structural changes to check if context artifacts need updating.",
+    "Call agentlint_emit_maintenance_snippet to get a persistent rule snippet for continuous context hygiene.",
+    "Never auto-run destructive actions; always ask user confirmation before editing files.",
   ].join(" ");
 
 export type AgentLintTransportMode = "stdio" | "http";
@@ -27,11 +25,10 @@ export type CreateAgentLintMcpServerOptions = {
   instructions?: string;
   transportMode?: AgentLintTransportMode;
   enableWorkspaceScan?: boolean;
-  enableApplyPatches?: boolean;
 };
 
 function resolveServerVersion(): string {
-  return process.env.npm_package_version ?? "0.1.0";
+  return process.env.npm_package_version ?? "0.2.0";
 }
 
 function resolveWorkspaceScanEnabled(options: CreateAgentLintMcpServerOptions): boolean {
@@ -50,34 +47,16 @@ function resolveWorkspaceScanEnabled(options: CreateAgentLintMcpServerOptions): 
   return process.env.MCP_ENABLE_WORKSPACE_SCAN === "true";
 }
 
-/**
- * apply_patches is only enabled in stdio (local) mode by default.
- * HTTP mode disables it entirely per great_plan.md §1.3.
- */
-function resolveApplyPatchesEnabled(options: CreateAgentLintMcpServerOptions): boolean {
-  if (typeof options.enableApplyPatches === "boolean") {
-    return options.enableApplyPatches;
-  }
-
-  // Only enabled in stdio mode (local-first)
-  if (options.transportMode === "stdio") {
-    return process.env.MCP_ENABLE_APPLY_PATCHES !== "false";
-  }
-
-  // Disabled in HTTP mode by default
-  return false;
-}
-
 function resolveInstructions(options: CreateAgentLintMcpServerOptions, workspaceScanEnabled: boolean): string {
   if (options.instructions) {
     return options.instructions;
   }
 
   if (workspaceScanEnabled) {
-    return `${DEFAULT_MCP_INSTRUCTIONS} Local workspace scanning is enabled via analyze_workspace_artifacts.`;
+    return `${DEFAULT_MCP_INSTRUCTIONS} Local workspace scanning is enabled via agentlint_plan_workspace_autofix.`;
   }
 
-  return `${DEFAULT_MCP_INSTRUCTIONS} Workspace scanning is disabled in this transport; provide file content explicitly for analysis.`;
+  return `${DEFAULT_MCP_INSTRUCTIONS} Workspace scanning is disabled in this transport.`;
 }
 
 export function createAgentLintMcpServer(
@@ -106,11 +85,8 @@ export function createAgentLintMcpServer(
     },
   );
 
-  const applyPatchesEnabled = resolveApplyPatchesEnabled(options);
-
   registerAgentLintTools(server, {
     enableWorkspaceScan: workspaceScanEnabled,
-    enableApplyPatches: applyPatchesEnabled,
   });
   registerAgentLintPrompts(server);
   registerAgentLintResources(server);

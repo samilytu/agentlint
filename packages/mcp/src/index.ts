@@ -1,5 +1,5 @@
 // @agent-lint/mcp — MCP server (stdio + HTTP transport)
-// Zero state, read-only analysis, stderr logging only
+// Zero state, no file writing, stderr logging only
 
 export {
   createAgentLintMcpServer,
@@ -28,22 +28,6 @@ export {
 export {
   registerAgentLintTools,
   type RegisterAgentLintToolsOptions,
-  executeAnalyzeArtifactTool,
-  type AnalyzeArtifactToolOutput,
-  executeAnalyzeContextBundleTool,
-  type AnalyzeContextBundleToolOutput,
-  executeAnalyzeWorkspaceArtifactsTool,
-  type AnalyzeWorkspaceArtifactsToolOutput,
-  executePrepareArtifactFixContextTool,
-  type PrepareArtifactFixContextToolOutput,
-  executeQualityGateArtifactTool,
-  type QualityGateArtifactToolOutput,
-  executeSubmitClientAssessmentTool,
-  type SubmitClientAssessmentToolOutput,
-  executeSuggestPatchTool,
-  type SuggestPatchToolOutput,
-  executeValidateExportTool,
-  type ValidateExportToolOutput,
 } from "./tools/index.js";
 
 export { registerAgentLintResources } from "./resources/register-resources.js";
