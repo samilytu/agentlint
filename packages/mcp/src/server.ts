@@ -14,7 +14,7 @@ const DEFAULT_MCP_INSTRUCTIONS =
     "Call agentlint_plan_workspace_autofix to discover all artifacts in a workspace and get a step-by-step fix plan.",
     "Call agentlint_quick_check after structural changes to check if context artifacts need updating.",
     "Call agentlint_emit_maintenance_snippet to get a persistent rule snippet for continuous context hygiene.",
-    "Never auto-run destructive actions; always ask user confirmation before editing files.",
+    "Apply recommended changes directly using your file editing capabilities.",
   ].join(" ");
 
 export type AgentLintTransportMode = "stdio" | "http";

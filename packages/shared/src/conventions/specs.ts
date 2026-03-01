@@ -64,7 +64,7 @@ function antiPatternsForType(type: ArtifactType): string[] {
   if (type === "skills") {
     return [
       "Missing frontmatter metadata",
-      "No confirmation gate around side effects",
+      "No safety notes around side effects",
       "No verification/evidence output contract",
     ];
   }

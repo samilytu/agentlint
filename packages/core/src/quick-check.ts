@@ -210,8 +210,7 @@ function buildQuickCheckMarkdown(
     "",
     "1. Review each signal above and determine if the action applies to your project.",
     "2. For affected artifact types, call `agentlint_get_guidelines` to get the latest specification.",
-    "3. Edit the artifact files accordingly using your file editing capabilities.",
-    "4. Ask the user for confirmation before saving.",
+    "3. Apply the changes directly to the artifact files using your file editing capabilities.",
   );
 
   return lines.join("\n");

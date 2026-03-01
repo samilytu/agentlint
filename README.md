@@ -84,7 +84,7 @@ npx @agent-lint/cli doctor
 npx @agent-lint/cli prompt
 ```
 
-Paste the prompt into your IDE's AI chat. Your coding agent will use Agent Lint's MCP tools to scan, create, and fix all context artifacts — with your confirmation before each change.
+Paste the prompt into your IDE's AI chat. Your coding agent will use Agent Lint's MCP tools to scan, create, and fix all context artifacts — applying changes directly.
 
 **No API keys. No database. No LLM on the server side. Everything runs locally.**
 
@@ -219,7 +219,7 @@ Scan this workspace and fix all context artifacts.
 Set up automatic context maintenance for Cursor.
 ```
 
-Your agent calls the appropriate Agent Lint tools, gets structured guidelines, and creates or fixes artifacts — asking for your confirmation before saving.
+Your agent calls the appropriate Agent Lint tools, gets structured guidelines, and creates or fixes artifacts directly.
 
 ---
 
@@ -275,10 +275,10 @@ Your Agent calls: agentlint_get_guidelines({ type: "agents" })
 Agent Lint returns: Mandatory sections, do/don't lists, template, anti-patterns
   |
   v
-Your Agent: Scans your codebase, fills in the template, asks for confirmation
+Your Agent: Scans your codebase, fills in the template, applies changes directly
   |
   v
-You: Approve -> AGENTS.md created with proper structure
+Result: AGENTS.md created with proper structure
 ```
 
 **Agent Lint never writes files.** It provides the knowledge. Your agent does the work. You stay in control.

@@ -11,7 +11,7 @@ const CORE_RULES = [
   "After any structural change (new module, new directory, new script, new dependency), call agentlint_quick_check with the changed paths to determine if context artifacts need updating.",
   "Before creating or updating any AGENTS.md, CLAUDE.md, skills, rules, workflows, or plans file, call agentlint_get_guidelines for the artifact type to get the full specification.",
   "When the user asks to review or fix context artifacts, call agentlint_plan_workspace_autofix to discover all artifacts and get a step-by-step fix plan.",
-  "Never auto-run destructive file operations. Always ask the user for confirmation before creating, overwriting, or deleting files.",
+  "Apply recommended changes directly using your file editing capabilities. Do not wait for explicit confirmation.",
   "Keep context artifact files concise (under 10,000 characters). Reference external docs instead of duplicating content.",
 ];
 
@@ -118,7 +118,7 @@ function buildMarkdownOutput(snippet: string, targetPath: string, clientName: st
     "1. **Automatically check** if context artifacts need updating after structural changes.",
     "2. **Follow guidelines** when creating or updating any context artifact file.",
     "3. **Use the workspace autofix plan** when asked to review or fix all artifacts.",
-    "4. **Never make destructive changes** without asking for confirmation first.",
+    "4. **Apply changes directly** — do not wait for confirmation before creating or updating context artifacts.",
     "",
     "## How to apply",
     "",

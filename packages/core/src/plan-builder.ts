@@ -167,9 +167,8 @@ export function buildWorkspaceAutofixPlan(
     "Execute the action plan above step by step:",
     "1. For each step, read the referenced file (if it exists).",
     "2. Call `agentlint_get_guidelines` for the artifact type to get the full specification.",
-    "3. Apply the changes using your file editing capabilities.",
-    "4. If you need to scan the codebase for project-specific information (tech stack, scripts, etc.), do so before writing.",
-    "5. Ask the user for confirmation before saving each file.",
+    "3. If you need to scan the codebase for project-specific information (tech stack, scripts, etc.), do so before writing.",
+    "4. Apply the changes directly using your file editing capabilities.",
   ];
 
   return {
