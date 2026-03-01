@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import fs from "node:fs";
 import path from "node:path";
 import { Box, Text, render } from "ink";
+import clipboardy from "clipboardy";
 import {
   Banner,
-  SectionTitle,
   PromptBox,
   Hint,
   Divider,
@@ -30,25 +30,53 @@ function PromptApp(): React.ReactNode {
   const hasReport = fs.existsSync(reportPath);
   const prompt = hasReport ? PROMPT_WITH_REPORT : PROMPT_WITHOUT_REPORT;
 
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+
+  useEffect(() => {
+    clipboardy
+      .write(prompt)
+      .then(() => setCopied(true))
+      .catch(() => setCopyError(true));
+  }, []);
+
   return (
     <Box flexDirection="column">
       <Banner />
       <Divider />
 
-      <SectionTitle>Copy this prompt into your IDE chat</SectionTitle>
+      <Box marginTop={1} marginLeft={1} gap={1}>
+        {copied && (
+          <>
+            <Text color={colors.success} bold>{"+"}</Text>
+            <Text color={colors.success} bold>Copied to clipboard!</Text>
+            <Text color={colors.muted}>Paste it into your IDE chat.</Text>
+          </>
+        )}
+        {copyError && (
+          <>
+            <Text color={colors.warning}>{"~"}</Text>
+            <Text color={colors.warning}>Could not copy to clipboard.</Text>
+            <Text color={colors.muted}>Copy the prompt below manually.</Text>
+          </>
+        )}
+        {!copied && !copyError && (
+          <Text color={colors.muted}>Copying to clipboard...</Text>
+        )}
+      </Box>
 
       <PromptBox>{prompt}</PromptBox>
 
       {hasReport ? (
-        <Box marginLeft={2}>
-          <Text color={colors.success}>{"✔ "}</Text>
+        <Box marginLeft={3}>
+          <Text color={colors.success} bold>{"+ "}</Text>
           <Text color={colors.muted}>
             Using report from {REPORT_FILENAME}
           </Text>
         </Box>
       ) : (
         <Hint>
-          {`Run ${"`"}agent-lint doctor${"`"} first to generate a detailed report for better results.`}
+          Run agent-lint doctor first to generate a detailed report for better results.
         </Hint>
       )}
     </Box>

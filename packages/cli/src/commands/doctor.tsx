@@ -12,7 +12,7 @@ import {
   InfoItem,
   NextStep,
   Divider,
-  StatBox,
+  StatusBar,
 } from "../ui/components.js";
 import { colors } from "../ui/theme.js";
 
@@ -72,19 +72,20 @@ function DoctorApp(): React.ReactNode {
 
       {phase === "done" && result && (
         <>
-          <SectionTitle>Scan results</SectionTitle>
-          <Box marginLeft={2} gap={3} marginTop={0}>
-            <StatBox
-              label="Found"
-              value={result.discoveredCount}
-              color={result.discoveredCount > 0 ? colors.success : colors.warning}
-            />
-            <StatBox
-              label="Missing"
-              value={result.missingCount}
-              color={result.missingCount > 0 ? colors.warning : colors.success}
-            />
-          </Box>
+          <StatusBar
+            items={[
+              {
+                label: "Found",
+                value: result.discoveredCount,
+                color: result.discoveredCount > 0 ? colors.success : colors.warning,
+              },
+              {
+                label: "Missing",
+                value: result.missingCount,
+                color: result.missingCount > 0 ? colors.warning : colors.success,
+              },
+            ]}
+          />
 
           {result.discovered.length > 0 && (
             <>
