@@ -47,11 +47,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "commander": "^14.0.3"
+    "@inkjs/ui": "^2.0.0",
+    "commander": "^14.0.3",
+    "ink": "^6.8.0",
+    "react": "19"
   },
   "devDependencies": {
     "@agent-lint/core": "workspace:*",
     "@agent-lint/shared": "workspace:*",
+    "@types/react": "^19.2.14",
     "typescript": "^5.0.0"
   }
 }
