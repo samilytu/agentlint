@@ -13,6 +13,10 @@ Your agents write code. Agent Lint makes sure they have the **right context** to
 
 [Quick Start](#-quick-start) · [MCP Tools](#-mcp-tools) · [CLI](#-cli) · [Installation](#-installation)
 
+<br />
+
+<img src="docs/screenshots/demo-doctor.svg" alt="agent-lint doctor" width="720" />
+
 </div>
 
 ---
@@ -73,16 +77,43 @@ It acts as a **meta-agent orchestrator** — guiding your AI coding agent to cre
 
 Set up Agent Lint in your project in 2 minutes:
 
+### 1. Auto-detect your IDE and create MCP config
+
 ```bash
-# 1. Auto-detect your IDE and create MCP config
 npx @agent-lint/cli init
+```
 
-# 2. Scan your workspace and generate a fix report
+<details>
+<summary>See output</summary>
+<br />
+<img src="docs/screenshots/demo-init.svg" alt="agent-lint init" width="680" />
+</details>
+
+### 2. Scan your workspace and generate a fix report
+
+```bash
 npx @agent-lint/cli doctor
+```
 
-# 3. Get a copy-paste prompt for your IDE chat
+<details>
+<summary>See output</summary>
+<br />
+<img src="docs/screenshots/demo-doctor.svg" alt="agent-lint doctor" width="680" />
+</details>
+
+### 3. Get a copy-paste prompt for your IDE chat
+
+```bash
 npx @agent-lint/cli prompt
 ```
+
+<details>
+<summary>See output</summary>
+<br />
+<img src="docs/screenshots/demo-prompt.svg" alt="agent-lint prompt" width="680" />
+</details>
+
+<br />
 
 Paste the prompt into your IDE's AI chat. Your coding agent will use Agent Lint's MCP tools to scan, create, and fix all context artifacts — applying changes directly.
 
@@ -225,16 +256,7 @@ Your agent calls the appropriate Agent Lint tools, gets structured guidelines, a
 
 ## CLI
 
-```bash
-# Set up MCP config for detected IDE clients
-agent-lint init
-
-# Scan workspace, generate .agentlint-report.md
-agent-lint doctor
-
-# Print a copy-paste prompt for your IDE chat
-agent-lint prompt
-```
+<img src="docs/screenshots/demo-help.svg" alt="agent-lint --help" width="680" />
 
 | Command             | Purpose                                   |
 | :------------------ | :---------------------------------------- |
@@ -321,6 +343,14 @@ pnpm install
 pnpm run build
 pnpm run test          # 140+ tests
 pnpm run typecheck
+```
+
+### Regenerating Screenshots
+
+Screenshots in `docs/screenshots/` are generated with [freeze](https://github.com/charmbracelet/freeze):
+
+```bash
+node scripts/generate-screenshots.mjs
 ```
 
 ---

@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "agentlint": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@agent-lint/mcp"
+      ]
+    }
+  }
+}
