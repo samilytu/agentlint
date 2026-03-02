@@ -83,6 +83,15 @@ function PromptApp(): React.ReactNode {
   );
 }
 
-export function runPromptCommand(): void {
+export function runPromptCommand(options: { stdout?: boolean }): void {
+  if (options.stdout) {
+    const rootPath = process.cwd();
+    const reportPath = path.join(rootPath, REPORT_FILENAME);
+    const hasReport = fs.existsSync(reportPath);
+    const prompt = hasReport ? PROMPT_WITH_REPORT : PROMPT_WITHOUT_REPORT;
+    process.stdout.write(prompt + "\n");
+    return;
+  }
+
   render(<PromptApp />);
 }

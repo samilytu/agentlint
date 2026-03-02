@@ -47,7 +47,7 @@ function DoctorApp(): React.ReactNode {
   const [result, setResult] = useState<DoctorResult | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const id = setImmediate(() => {
       const r = runDoctor();
 
       const reportPath = path.join(process.cwd(), REPORT_FILENAME);
@@ -55,8 +55,8 @@ function DoctorApp(): React.ReactNode {
 
       setResult(r);
       setPhase("done");
-    }, 400);
-    return () => clearTimeout(timer);
+    });
+    return () => clearImmediate(id);
   }, []);
 
   return (

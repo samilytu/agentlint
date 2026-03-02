@@ -1,3 +1,7 @@
+declare const __CLI_VERSION__: string;
+
+export const VERSION: string = typeof __CLI_VERSION__ !== "undefined" ? __CLI_VERSION__ : "0.0.0-dev";
+
 export const colors = {
   primary: "#6367FF",
   secondary: "#8494FF",
@@ -40,5 +44,3 @@ export const BANNER_LINES_2 = [
 ];
 
 export const TAGLINE = "Meta-agent orchestrator for AI coding agents";
-
-export const VERSION = "0.3.1";

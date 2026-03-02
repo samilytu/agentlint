@@ -173,12 +173,12 @@ function InitApp({ options }: { options: { yes?: boolean; all?: boolean } }): Re
   const [result, setResult] = useState<InitResult | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const id = setImmediate(() => {
       const r = runInit(options);
       setResult(r);
       setPhase("done");
-    }, 300);
-    return () => clearTimeout(timer);
+    });
+    return () => clearImmediate(id);
   }, []);
 
   return (
@@ -250,6 +250,24 @@ function InitApp({ options }: { options: { yes?: boolean; all?: boolean } }): Re
   );
 }
 
-export function runInitCommand(options: { yes?: boolean; all?: boolean }): void {
+export function runInitCommand(options: { yes?: boolean; all?: boolean; stdout?: boolean }): void {
+  if (options.stdout) {
+    const result = runInit(options);
+    if (result.noClients) {
+      process.stdout.write("No IDE client directories detected.\n");
+      return;
+    }
+    for (const item of result.created) {
+      process.stdout.write(`[created] ${item}\n`);
+    }
+    for (const item of result.skipped) {
+      process.stdout.write(`[skip] ${item}\n`);
+    }
+    for (const n of result.notes) {
+      process.stdout.write(`[note] ${n.client}: ${n.note}\n`);
+    }
+    return;
+  }
+
   render(<InitApp options={options} />);
 }

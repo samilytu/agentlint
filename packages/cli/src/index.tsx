@@ -10,13 +10,17 @@ import { Command } from "commander";
 import { runInitCommand } from "./commands/init.js";
 import { runDoctorCommand } from "./commands/doctor.js";
 import { runPromptCommand } from "./commands/prompt.js";
+import { redirectLogsToStderr } from "./utils.js";
+import { VERSION } from "./ui/theme.js";
+
+redirectLogsToStderr();
 
 const program = new Command();
 
 program
   .name("agent-lint")
   .description("Meta-agent orchestrator for AI coding agent context artifacts")
-  .version("0.3.1")
+  .version(VERSION)
   .showHelpAfterError();
 
 program
@@ -24,7 +28,8 @@ program
   .description("Set up Agent Lint MCP config for detected IDE clients")
   .option("-y, --yes", "Skip confirmation prompts")
   .option("--all", "Generate configs for all supported clients, not just detected ones")
-  .action((options: { yes?: boolean; all?: boolean }) => {
+  .option("--stdout", "Print results to stdout instead of TUI")
+  .action((options: { yes?: boolean; all?: boolean; stdout?: boolean }) => {
     runInitCommand(options);
   });
 
@@ -40,8 +45,9 @@ program
 program
   .command("prompt")
   .description("Print a copy-paste prompt for your IDE chat to trigger autofix")
-  .action(() => {
-    runPromptCommand();
+  .option("--stdout", "Print prompt to stdout instead of TUI")
+  .action((options: { stdout?: boolean }) => {
+    runPromptCommand(options);
   });
 
 const argv = process.argv.slice(2);
