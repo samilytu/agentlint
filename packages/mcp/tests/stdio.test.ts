@@ -97,38 +97,28 @@ class McpStdioClient {
   }
 
   private send(message: JsonRpcRequest | JsonRpcNotification): void {
-    const body = Buffer.from(JSON.stringify(message), "utf8");
-    const header = Buffer.from(`Content-Length: ${body.byteLength}\r\n\r\n`, "utf8");
-    this.server.stdin.write(Buffer.concat([header, body]));
+    // MCP SDK v1.27+ uses newline-delimited JSON (NDJSON), not Content-Length framing
+    this.server.stdin.write(JSON.stringify(message) + "\n");
   }
 
   private onData(chunk: Buffer): void {
     this.readBuffer = Buffer.concat([this.readBuffer, chunk]);
 
+    // MCP SDK v1.27+ uses NDJSON: one JSON object per line, delimited by '\n'
     while (true) {
-      const headerEndIndex = this.readBuffer.indexOf("\r\n\r\n");
-      if (headerEndIndex === -1) {
+      const newlineIndex = this.readBuffer.indexOf("\n");
+      if (newlineIndex === -1) {
         return;
       }
 
-      const header = this.readBuffer.slice(0, headerEndIndex).toString("utf8");
-      const lengthMatch = /Content-Length:\s*(\d+)/i.exec(header);
-      if (!lengthMatch) {
-        throw new Error("Missing Content-Length header in MCP stdio response");
+      const line = this.readBuffer.subarray(0, newlineIndex).toString("utf8").replace(/\r$/, "");
+      this.readBuffer = this.readBuffer.subarray(newlineIndex + 1);
+
+      if (line.length === 0) {
+        continue;
       }
 
-      const contentLength = Number(lengthMatch[1]);
-      const messageStartIndex = headerEndIndex + 4;
-      const messageEndIndex = messageStartIndex + contentLength;
-
-      if (this.readBuffer.length < messageEndIndex) {
-        return;
-      }
-
-      const payload = this.readBuffer.slice(messageStartIndex, messageEndIndex).toString("utf8");
-      this.readBuffer = this.readBuffer.slice(messageEndIndex);
-
-      const parsed: unknown = JSON.parse(payload);
+      const parsed: unknown = JSON.parse(line);
       if (!parsed || typeof parsed !== "object") {
         continue;
       }
