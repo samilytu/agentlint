@@ -75,9 +75,6 @@ export function createAgentLintMcpServer(
         tools: {
           listChanged: true,
         },
-        prompts: {
-          listChanged: true,
-        },
         resources: {
           listChanged: true,
         },
