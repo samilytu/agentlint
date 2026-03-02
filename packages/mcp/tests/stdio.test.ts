@@ -165,6 +165,7 @@ describeMcpStdio("MCP stdio server integration", { timeout: 30_000 }, () => {
   let server: ChildProcessWithoutNullStreams;
   let client: McpStdioClient;
   let stderrOutput = "";
+  let initializeResponse: Awaited<ReturnType<McpStdioClient["request"]>>;
 
   beforeAll(async () => {
     server = spawnMcpServer();
@@ -178,7 +179,6 @@ describeMcpStdio("MCP stdio server integration", { timeout: 30_000 }, () => {
       throw error;
     });
 
-    let initializeResponse: Awaited<ReturnType<McpStdioClient["request"]>>;
     try {
       initializeResponse = await client.request("initialize", {
         protocolVersion: "2024-11-05",
@@ -276,22 +276,34 @@ describeMcpStdio("MCP stdio server integration", { timeout: 30_000 }, () => {
     expect(isJsonRpcError || isToolError).toBe(true);
   });
 
-  it("lists registered prompts (currently empty)", async () => {
+  it("does not advertise prompt capabilities in tool-first mode", () => {
+    expect("result" in initializeResponse).toBe(true);
+
+    if (!("result" in initializeResponse)) {
+      return;
+    }
+
+    const capabilities = initializeResponse.result.capabilities;
+    expect(capabilities && typeof capabilities === "object").toBe(true);
+
+    if (!capabilities || typeof capabilities !== "object") {
+      return;
+    }
+
+    const capabilityMap = capabilities as Record<string, unknown>;
+    expect("prompts" in capabilityMap).toBe(false);
+  });
+
+  it("returns method not found for prompts/list when prompts are unsupported", async () => {
     const response = await client.request("prompts/list", {});
-    expect("result" in response).toBe(true);
+    expect("error" in response).toBe(true);
 
-    if (!("result" in response)) {
+    if (!("error" in response)) {
       return;
     }
 
-    const prompts = response.result.prompts;
-    expect(Array.isArray(prompts)).toBe(true);
-
-    if (!Array.isArray(prompts)) {
-      return;
-    }
-
-    expect(prompts).toHaveLength(0);
+    expect(response.error.code).toBe(-32601);
+    expect(response.error.message).toContain("Method not found");
   });
 
   it("does not log protocol data to stderr", () => {
