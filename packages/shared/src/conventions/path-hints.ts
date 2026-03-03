@@ -33,6 +33,11 @@ const SKILL_HINTS: ArtifactPathHint[] = [
     examples: ["skills/release/SKILL.md", ".claude/skills/testing/SKILL.md"],
   },
   {
+    ecosystem: "Agent Skills standard",
+    patterns: [".agents/skills/**/SKILL.md", ".github/skills/**/SKILL.md"],
+    examples: [".agents/skills/release/SKILL.md", ".github/skills/security-review/SKILL.md"],
+  },
+  {
     ecosystem: "Generic",
     patterns: ["**/*skill*.md", "**/SKILL.md"],
     examples: ["docs/skills/code-review-skill.md"],

@@ -5,25 +5,34 @@ import { buildArtifactPathHintsMarkdown } from "./path-hints.js";
 function sectionsForType(type: ArtifactType): string[] {
   if (type === "skills") {
     return [
-      "YAML frontmatter: name, description, disable-model-invocation",
+      "YAML frontmatter: name + description (required), optional platform extensions",
+      "When to use (trigger keywords and invocation boundaries)",
+      "Repository evidence basis (stack/commands inferred from codebase)",
+      "Clarification gate (ask only for blocking ambiguity)",
       "Purpose",
       "Scope (included/excluded)",
       "Inputs",
-      "Step-by-step execution",
+      "Step-by-step execution (deterministic)",
+      "Output contract",
       "Verification commands",
       "Evidence format",
-      "Safety notes",
+      "Safety notes and explicit DONTs",
     ];
   }
 
   if (type === "agents") {
     return [
+      "Do block",
+      "Don't block",
+      "Repository evidence basis (stack/commands inferred from codebase)",
+      "Clarification gate (ask only for blocking ambiguity)",
       "Quick commands",
       "Repo map",
       "Working rules",
+      "When stuck / escalation path",
       "Verification steps",
       "Security boundaries",
-      "Do not do",
+      "PR/change checklist",
     ];
   }
 
@@ -65,6 +74,11 @@ function antiPatternsForType(type: ArtifactType): string[] {
     return [
       "Missing frontmatter metadata",
       "No safety notes around side effects",
+      "Description missing trigger conditions (what + when)",
+      "Overlong SKILL body instead of references/scripts progressive disclosure",
+      "Hardcoded stack/tooling assumptions without repository evidence",
+      "Asking broad clarifications before scanning repository evidence",
+      "No confirmation gate around side effects",
       "No verification/evidence output contract",
     ];
   }
@@ -72,6 +86,10 @@ function antiPatternsForType(type: ArtifactType): string[] {
   if (type === "agents") {
     return [
       "README duplication and narrative bloat",
+      "Missing explicit Do and Don't blocks near top",
+      "Rules that restate generic LLM knowledge instead of project-specific constraints",
+      "Hardcoded stack/tooling assumptions without repository evidence",
+      "Unnecessary clarifying questions when safe defaults exist",
       "No explicit destructive-command boundaries",
       "Overlong policy text that exceeds practical context limits",
     ];
