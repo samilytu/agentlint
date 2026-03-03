@@ -1,273 +1,341 @@
 import React, { useState, useEffect } from "react";
-import fs from "node:fs";
-import path from "node:path";
-import { Box, Text, render } from "ink";
-import { Spinner } from "@inkjs/ui";
+import { Box, Text, render, useApp } from "ink";
+import { Spinner, MultiSelect, Select } from "@inkjs/ui";
 import {
   Banner,
   SectionTitle,
   SuccessItem,
   SkipItem,
-  InfoItem,
   ErrorItem,
   NextStep,
   Divider,
 } from "../ui/components.js";
 import { colors } from "../ui/theme.js";
+import {
+  type McpClient,
+  type ClientId,
+  type Scope,
+  type DetectedClient,
+  CLIENT_REGISTRY,
+  detectInstalledClients,
+  getAvailableScopes,
+} from "./clients.js";
+import { type InstallResult, installClient } from "./config-writer.js";
 
-type ClientConfig = {
-  name: string;
-  detectDir: string | null;
-  configPath: string;
-  buildConfig: () => string;
-  note?: string;
-};
+// ── Types ──────────────────────────────────────────────────────────────
 
-function mcpStdioEntry(): Record<string, unknown> {
-  return {
-    command: "npx",
-    args: ["-y", "@agent-lint/mcp"],
-  };
+type WizardStep = "detecting" | "selectClients" | "selectScope" | "installing" | "done";
+
+interface ClientInstallResult {
+  client: McpClient;
+  scope: Scope;
+  result: InstallResult;
 }
 
-const CLIENT_CONFIGS: ClientConfig[] = [
-  {
-    name: "Cursor",
-    detectDir: ".cursor",
-    configPath: ".cursor/mcp.json",
-    buildConfig: () =>
-      JSON.stringify(
-        { mcpServers: { agentlint: mcpStdioEntry() } },
-        null,
-        2,
-      ),
-  },
-  {
-    name: "Windsurf",
-    detectDir: ".windsurf",
-    configPath: ".windsurf/mcp_config.json",
-    buildConfig: () =>
-      JSON.stringify(
-        { mcpServers: { agentlint: mcpStdioEntry() } },
-        null,
-        2,
-      ),
-  },
-  {
-    name: "VS Code",
-    detectDir: ".vscode",
-    configPath: ".vscode/mcp.json",
-    buildConfig: () =>
-      JSON.stringify(
-        {
-          servers: {
-            agentlint: {
-              type: "stdio",
-              command: "npx",
-              args: ["-y", "@agent-lint/mcp"],
-            },
-          },
-        },
-        null,
-        2,
-      ),
-  },
-  {
-    name: "Claude Desktop",
-    detectDir: null,
-    configPath: "claude_desktop_config.json",
-    buildConfig: () =>
-      JSON.stringify(
-        { mcpServers: { agentlint: mcpStdioEntry() } },
-        null,
-        2,
-      ),
-    note:
-      "Copy this file to your Claude Desktop config directory:\n" +
-      "  macOS: ~/Library/Application Support/Claude/\n" +
-      "  Windows: %APPDATA%\\Claude\\",
-  },
-  {
-    name: "Claude Code CLI",
-    detectDir: ".claude",
-    configPath: "",
-    buildConfig: () => "",
-    note: "Run: claude mcp add agentlint -- npx -y @agent-lint/mcp",
-  },
-];
+// ── Stdout Mode (backward compat) ──────────────────────────────────────
 
-function detectClients(rootPath: string): ClientConfig[] {
-  const detected: ClientConfig[] = [];
-  for (const client of CLIENT_CONFIGS) {
-    if (client.detectDir === null) continue;
-    const dirPath = path.join(rootPath, client.detectDir);
-    if (fs.existsSync(dirPath)) {
-      detected.push(client);
-    }
+function runStdoutInit(options: { yes?: boolean; all?: boolean }): void {
+  const cwd = process.cwd();
+  const detected = detectInstalledClients(cwd);
+  const clients = options.all
+    ? CLIENT_REGISTRY
+    : detected.map((d) => d.client);
+
+  if (clients.length === 0) {
+    process.stdout.write("No IDE client directories detected.\n");
+    return;
   }
-  return detected;
-}
 
-function ensureDir(filePath: string): void {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  for (const client of clients) {
+    const scopes = getAvailableScopes(client);
+    const scope = scopes.includes("workspace") ? "workspace" : "global";
+    const result = installClient(client, scope, cwd, /* preferCli */ false);
+
+    switch (result.status) {
+      case "created":
+      case "merged":
+        process.stdout.write(`[created] ${result.configPath} (${client.name})\n`);
+        break;
+      case "exists":
+        process.stdout.write(`[skip] ${result.configPath} (${client.name}) — already exists\n`);
+        break;
+      case "cli-success":
+        process.stdout.write(`[created] ${client.name} via CLI: ${result.message}\n`);
+        break;
+      case "no-scope":
+      case "error":
+        process.stdout.write(`[note] ${client.name}: ${result.message}\n`);
+        break;
+    }
   }
 }
 
-type InitResult = {
-  created: string[];
-  skipped: string[];
-  notes: { client: string; note: string }[];
-  noClients: boolean;
-};
+// ── Wizard Component ───────────────────────────────────────────────────
 
-function runInit(options: { yes?: boolean; all?: boolean }): InitResult {
-  const rootPath = process.cwd();
-  const detected = options.all ? CLIENT_CONFIGS : detectClients(rootPath);
-  const created: string[] = [];
-  const skipped: string[] = [];
-  const notes: { client: string; note: string }[] = [];
+function InitWizard({ options }: { options: { yes?: boolean; all?: boolean } }): React.ReactNode {
+  const { exit } = useApp();
+  const cwd = process.cwd();
 
-  if (detected.length === 0 && !options.all) {
-    return { created, skipped, notes, noClients: true };
-  }
+  const [step, setStep] = useState<WizardStep>("detecting");
+  const [detected, setDetected] = useState<DetectedClient[]>([]);
+  const [selectedClientIds, setSelectedClientIds] = useState<ClientId[]>([]);
+  const [selectedScope, setSelectedScope] = useState<Scope | null>(null);
+  const [results, setResults] = useState<ClientInstallResult[]>([]);
 
-  for (const client of detected) {
-    if (!client.configPath) {
-      if (client.note) {
-        notes.push({ client: client.name, note: client.note });
-      }
-      continue;
-    }
-
-    const fullPath = path.join(rootPath, client.configPath);
-
-    if (fs.existsSync(fullPath) && !options.yes) {
-      skipped.push(`${client.configPath} (${client.name}) — already exists`);
-      continue;
-    }
-
-    const config = client.buildConfig();
-    if (!config) {
-      if (client.note) {
-        notes.push({ client: client.name, note: client.note });
-      }
-      continue;
-    }
-
-    ensureDir(fullPath);
-    fs.writeFileSync(fullPath, config, "utf-8");
-    created.push(`${client.configPath} (${client.name})`);
-
-    if (client.note) {
-      notes.push({ client: client.name, note: client.note });
-    }
-  }
-
-  return { created, skipped, notes, noClients: false };
-}
-
-function InitApp({ options }: { options: { yes?: boolean; all?: boolean } }): React.ReactNode {
-  const [phase, setPhase] = useState<"scanning" | "done">("scanning");
-  const [result, setResult] = useState<InitResult | null>(null);
-
+  // Step 1: Auto-detect clients
   useEffect(() => {
     const id = setImmediate(() => {
-      const r = runInit(options);
-      setResult(r);
-      setPhase("done");
+      const found = detectInstalledClients(cwd);
+      setDetected(found);
+
+      if (options.all) {
+        // --all: skip selection, use all clients
+        setSelectedClientIds(CLIENT_REGISTRY.map((c) => c.id));
+        setStep("selectScope");
+      } else {
+        setStep("selectClients");
+      }
     });
     return () => clearImmediate(id);
   }, []);
+
+  // Step 4: Install configs when scope is selected
+  useEffect(() => {
+    if (step !== "installing") return;
+    if (!selectedScope) return;
+
+    const id = setImmediate(() => {
+      const installResults: ClientInstallResult[] = [];
+      const selectedClients = CLIENT_REGISTRY.filter((c) =>
+        selectedClientIds.includes(c.id),
+      );
+
+      for (const client of selectedClients) {
+        const result = installClient(client, selectedScope, cwd);
+        installResults.push({ client, scope: selectedScope, result });
+      }
+
+      setResults(installResults);
+      setStep("done");
+    });
+    return () => clearImmediate(id);
+  }, [step, selectedScope]);
+
+  // Auto-exit after rendering results
+  useEffect(() => {
+    if (step === "done") {
+      const id = setTimeout(() => exit(), 500);
+      return () => clearTimeout(id);
+    }
+  }, [step]);
+
+  // Build client options for MultiSelect
+  const clientOptions = CLIENT_REGISTRY.map((client) => {
+    const det = detected.find((d) => d.client.id === client.id);
+    const suffix = det ? ` (detected via ${det.detectedBy})` : "";
+    return {
+      label: `${client.name}${suffix}`,
+      value: client.id,
+    };
+  });
+
+  // Pre-select detected clients
+  const defaultSelected = detected.map((d) => d.client.id);
+
+  // Scope options
+  const scopeOptions = [
+    { label: "Workspace — project-local config", value: "workspace" as Scope },
+    { label: "Global — user-level config", value: "global" as Scope },
+  ];
 
   return (
     <Box flexDirection="column">
       <Banner />
       <Divider />
 
-      {phase === "scanning" && (
+      {/* Step 1: Detecting */}
+      {step === "detecting" && (
         <Box marginTop={1} marginLeft={2}>
-          <Spinner label="Detecting IDE clients..." />
+          <Spinner label="Detecting installed IDE clients..." />
         </Box>
       )}
 
-      {phase === "done" && result && (
+      {/* Step 2: Select Clients */}
+      {step === "selectClients" && (
         <>
-          {result.noClients ? (
-            <>
-              <SectionTitle>No IDE clients detected</SectionTitle>
-              <Box marginLeft={2} marginTop={0}>
-                <Text color={colors.muted}>
-                  No .cursor/, .windsurf/, .vscode/, or .claude/ directories found.
-                </Text>
-              </Box>
-              <NextStep>Use --all to generate configs for all supported clients.</NextStep>
-            </>
+          {detected.length > 0 ? (
+            <Box marginTop={1} marginLeft={2}>
+              <Text color={colors.success} bold>{"+ "}</Text>
+              <Text>
+                Found {detected.length} client{detected.length !== 1 ? "s" : ""}
+              </Text>
+            </Box>
           ) : (
-            <>
-              {result.created.length > 0 && (
-                <>
-                  <SectionTitle>Created</SectionTitle>
-                  {result.created.map((item, i) => (
-                    <SuccessItem key={i}>{item}</SuccessItem>
-                  ))}
-                </>
-              )}
-
-              {result.skipped.length > 0 && (
-                <>
-                  <SectionTitle>Skipped</SectionTitle>
-                  {result.skipped.map((item, i) => (
-                    <SkipItem key={i}>{item}</SkipItem>
-                  ))}
-                </>
-              )}
-
-              {result.notes.length > 0 && (
-                <>
-                  <SectionTitle>Manual steps</SectionTitle>
-                  {result.notes.map((n, i) => (
-                    <InfoItem key={i}>{`${n.client}: ${n.note}`}</InfoItem>
-                  ))}
-                </>
-              )}
-
-              {result.created.length === 0 && result.skipped.length > 0 && (
-                <Box marginLeft={2} marginTop={1}>
-                  <Text color={colors.muted}>No new config files created.</Text>
-                </Box>
-              )}
-
-              <NextStep>
-                {`Run ${"`"}agent-lint doctor${"`"} to scan your workspace.`}
-              </NextStep>
-            </>
+            <Box marginTop={1} marginLeft={2}>
+              <Text color={colors.warning}>{"~ "}</Text>
+              <Text color={colors.muted}>No clients auto-detected. Select manually:</Text>
+            </Box>
           )}
+
+          <SectionTitle>Select clients to configure</SectionTitle>
+          <Box marginLeft={3} marginBottom={0}>
+            <Text color={colors.dim} italic>
+              {"↑/↓ navigate · space toggle · enter confirm"}
+            </Text>
+          </Box>
+          <Box marginLeft={3} marginTop={0}>
+            <MultiSelect
+              options={clientOptions}
+              defaultValue={defaultSelected}
+              onSubmit={(values) => {
+                if (values.length === 0) {
+                  // Nothing selected — exit gracefully
+                  setStep("done");
+                  return;
+                }
+                setSelectedClientIds(values as ClientId[]);
+                setStep("selectScope");
+              }}
+            />
+          </Box>
         </>
+      )}
+
+      {/* Step 3: Select Scope */}
+      {step === "selectScope" && (
+        <>
+          <Box marginTop={1} marginLeft={2}>
+            <Text color={colors.success} bold>{"+ "}</Text>
+            <Text>
+              {selectedClientIds.length} client{selectedClientIds.length !== 1 ? "s" : ""} selected
+            </Text>
+          </Box>
+
+          <SectionTitle>Select config scope</SectionTitle>
+          <Box marginLeft={3} marginBottom={0}>
+            <Text color={colors.dim} italic>
+              {"↑/↓ navigate · enter confirm"}
+            </Text>
+          </Box>
+          <Box marginLeft={3} marginTop={0}>
+            <Select
+              options={scopeOptions}
+              onChange={(value) => {
+                setSelectedScope(value as Scope);
+                setStep("installing");
+              }}
+            />
+          </Box>
+        </>
+      )}
+
+      {/* Step 4: Installing */}
+      {step === "installing" && (
+        <Box marginTop={1} marginLeft={2}>
+          <Spinner label="Configuring MCP servers..." />
+        </Box>
+      )}
+
+      {/* Step 5: Results */}
+      {step === "done" && (
+        <ResultsView results={results} />
       )}
     </Box>
   );
 }
 
+// ── Results Display ────────────────────────────────────────────────────
+
+function ResultsView({ results }: { results: ClientInstallResult[] }): React.ReactNode {
+  if (results.length === 0) {
+    return (
+      <>
+        <SectionTitle>No clients configured</SectionTitle>
+        <Box marginLeft={2}>
+          <Text color={colors.muted}>No clients were selected for configuration.</Text>
+        </Box>
+        <NextStep>{"Run agent-lint init again to set up MCP config."}</NextStep>
+      </>
+    );
+  }
+
+  const created = results.filter(
+    (r) => r.result.status === "created" || r.result.status === "merged" || r.result.status === "cli-success",
+  );
+  const skipped = results.filter((r) => r.result.status === "exists");
+  const errors = results.filter((r) => r.result.status === "error" || r.result.status === "no-scope");
+
+  return (
+    <>
+      {created.length > 0 && (
+        <>
+          <SectionTitle>Configured</SectionTitle>
+          {created.map((r, i) => (
+            <SuccessItem key={i}>
+              {r.result.status === "cli-success"
+                ? `${r.client.name} (${r.scope}) via CLI`
+                : `${formatPath(r.result)} (${r.client.name}, ${r.scope})`}
+            </SuccessItem>
+          ))}
+        </>
+      )}
+
+      {skipped.length > 0 && (
+        <>
+          <SectionTitle>Already configured</SectionTitle>
+          {skipped.map((r, i) => (
+            <SkipItem key={i}>
+              {`${formatPath(r.result)} (${r.client.name}) — already exists`}
+            </SkipItem>
+          ))}
+        </>
+      )}
+
+      {errors.length > 0 && (
+        <>
+          <SectionTitle>Errors</SectionTitle>
+          {errors.map((r, i) => (
+            <ErrorItem key={i}>
+              {`${r.client.name}: ${formatError(r.result)}`}
+            </ErrorItem>
+          ))}
+        </>
+      )}
+
+      {created.length === 0 && skipped.length > 0 && (
+        <Box marginLeft={2} marginTop={1}>
+          <Text color={colors.muted}>All selected clients already have MCP config.</Text>
+        </Box>
+      )}
+
+      <NextStep>
+        {`Run ${"`"}agent-lint doctor${"`"} to scan your workspace.`}
+      </NextStep>
+    </>
+  );
+}
+
+function formatPath(result: InstallResult): string {
+  if ("configPath" in result) {
+    return result.configPath;
+  }
+  return "";
+}
+
+function formatError(result: InstallResult): string {
+  if ("message" in result) {
+    return result.message;
+  }
+  return "Unknown error";
+}
+
+// ── Export ──────────────────────────────────────────────────────────────
+
 export function runInitCommand(options: { yes?: boolean; all?: boolean; stdout?: boolean }): void {
   if (options.stdout) {
-    const result = runInit(options);
-    if (result.noClients) {
-      process.stdout.write("No IDE client directories detected.\n");
-      return;
-    }
-    for (const item of result.created) {
-      process.stdout.write(`[created] ${item}\n`);
-    }
-    for (const item of result.skipped) {
-      process.stdout.write(`[skip] ${item}\n`);
-    }
-    for (const n of result.notes) {
-      process.stdout.write(`[note] ${n.client}: ${n.note}\n`);
-    }
+    runStdoutInit(options);
     return;
   }
 
-  render(<InitApp options={options} />);
+  render(<InitWizard options={options} />);
 }
