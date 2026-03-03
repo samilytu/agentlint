@@ -43,13 +43,12 @@ It acts as a **meta-agent orchestrator** — guiding your AI coding agent to cre
 
 ---
 
-<table>
+
+<table width="100%">
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
-### Without Agent Lint
-
-&nbsp;
+### ❌ Without Agent Lint
 
 - Vague, generic instructions that **waste thousands of tokens**
 - Context files become **stale** as the codebase evolves
@@ -58,11 +57,9 @@ It acts as a **meta-agent orchestrator** — guiding your AI coding agent to cre
 - Agents generate their own rules — often **repetitive and low-quality**
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
-### With Agent Lint
-
-&nbsp;
+### ✅ With <font color="#6367FF">A</font><font color="#6367FF">g</font><font color="#7078FF">e</font><font color="#7078FF">n</font><font color="#8494FF">t</font> <font color="#C9BEFF">L</font><font color="#C9BEFF">i</font><font color="#E4CCFE">n</font><font color="#E4CCFE">t</font>
 
 - **Comprehensive guidelines** for every artifact type — what to include, what to avoid
 - **Workspace scanning** detects missing and incomplete artifacts automatically
@@ -73,6 +70,7 @@ It acts as a **meta-agent orchestrator** — guiding your AI coding agent to cre
 </td>
 </tr>
 </table>
+
 
 ---
 
