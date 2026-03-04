@@ -3,10 +3,10 @@ declare const __CLI_VERSION__: string;
 export const VERSION: string = typeof __CLI_VERSION__ !== "undefined" ? __CLI_VERSION__ : "0.0.0-dev";
 
 export const colors = {
-  primary: "#6367FF",
-  secondary: "#8494FF",
-  tertiary: "#C9BEFF",
-  accent: "#FFDBFD",
+  primary: "#84B179",
+  secondary: "#A2CB8B",
+  tertiary: "#C7EABB",
+  accent: "#E8F5BD",
   dim: "#555555",
   success: "#22c55e",
   warning: "#eab308",
@@ -16,13 +16,13 @@ export const colors = {
 } as const;
 
 export const gradient = [
-  "#6367FF",
-  "#7078FF",
-  "#8494FF",
-  "#A3A9FF",
-  "#C9BEFF",
-  "#E4CCFE",
-  "#FFDBFD",
+  "#84B179",
+  "#93BE82",
+  "#A2CB8B",
+  "#B5DAA3",
+  "#C7EABB",
+  "#D8EFBC",
+  "#E8F5BD",
 ] as const;
 
 export const BANNER_LINES = [
