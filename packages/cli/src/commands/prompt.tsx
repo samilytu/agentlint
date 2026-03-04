@@ -24,7 +24,20 @@ const PROMPT_WITHOUT_REPORT =
   "Use agentlint_get_guidelines for each artifact type before editing. " +
   "Apply all changes directly.";
 
-function PromptApp(): React.ReactNode {
+export interface PromptResult {
+  prompt: string;
+  hasReport: boolean;
+  copied: boolean;
+}
+
+export interface PromptAppProps {
+  /** When provided, called instead of process exit (embedded mode) */
+  onComplete?: (result: PromptResult) => void;
+  /** Whether to show banner (standalone mode). Default: true */
+  showBanner?: boolean;
+}
+
+export function PromptApp({ onComplete, showBanner = true }: PromptAppProps): React.ReactNode {
   const rootPath = process.cwd();
   const reportPath = path.join(rootPath, REPORT_FILENAME);
   const hasReport = fs.existsSync(reportPath);
@@ -40,10 +53,23 @@ function PromptApp(): React.ReactNode {
       .catch(() => setCopyError(true));
   }, []);
 
+  // When done: call onComplete callback (embedded) or let Ink exit naturally (standalone)
+  useEffect(() => {
+    if (!copied && !copyError) return;
+    if (onComplete) {
+      const id = setTimeout(() => onComplete({ prompt, hasReport, copied }), 300);
+      return () => clearTimeout(id);
+    }
+  }, [copied, copyError, onComplete, prompt, hasReport]);
+
   return (
     <Box flexDirection="column">
-      <Banner />
-      <Divider />
+      {showBanner && (
+        <>
+          <Banner />
+          <Divider />
+        </>
+      )}
 
       <Box marginTop={1} marginLeft={1} gap={1}>
         {copied && (
@@ -93,5 +119,5 @@ export function runPromptCommand(options: { stdout?: boolean }): void {
     return;
   }
 
-  render(<PromptApp />);
+  render(<PromptApp showBanner={true} />);
 }

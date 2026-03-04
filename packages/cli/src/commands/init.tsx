@@ -26,10 +26,18 @@ import { type InstallResult, installClient } from "./config-writer.js";
 
 type WizardStep = "detecting" | "selectClients" | "selectScope" | "installing" | "done";
 
-interface ClientInstallResult {
+export interface ClientInstallResult {
   client: McpClient;
   scope: Scope;
   result: InstallResult;
+}
+
+export interface InitWizardProps {
+  options: { yes?: boolean; all?: boolean };
+  /** When provided, called instead of process exit (embedded mode) */
+  onComplete?: (results: ClientInstallResult[]) => void;
+  /** Whether to show banner (standalone mode). Default: true */
+  showBanner?: boolean;
 }
 
 // ── Stdout Mode (backward compat) ──────────────────────────────────────
@@ -72,7 +80,7 @@ function runStdoutInit(options: { yes?: boolean; all?: boolean }): void {
 
 // ── Wizard Component ───────────────────────────────────────────────────
 
-function InitWizard({ options }: { options: { yes?: boolean; all?: boolean } }): React.ReactNode {
+export function InitWizard({ options, onComplete, showBanner = true }: InitWizardProps): React.ReactNode {
   const { exit } = useApp();
   const cwd = process.cwd();
 
@@ -121,13 +129,18 @@ function InitWizard({ options }: { options: { yes?: boolean; all?: boolean } }):
     return () => clearImmediate(id);
   }, [step, selectedScope]);
 
-  // Auto-exit after rendering results
+  // When done: call onComplete callback (embedded) or exit (standalone)
   useEffect(() => {
-    if (step === "done") {
-      const id = setTimeout(() => exit(), 500);
+    if (step !== "done") return;
+    if (onComplete) {
+      // Embedded mode — notify parent, don't exit
+      const id = setTimeout(() => onComplete(results), 300);
       return () => clearTimeout(id);
     }
-  }, [step]);
+    // Standalone mode — exit process
+    const id = setTimeout(() => exit(), 500);
+    return () => clearTimeout(id);
+  }, [step, onComplete, results, exit]);
 
   // Build client options for MultiSelect
   const clientOptions = CLIENT_REGISTRY.map((client) => {
@@ -150,8 +163,12 @@ function InitWizard({ options }: { options: { yes?: boolean; all?: boolean } }):
 
   return (
     <Box flexDirection="column">
-      <Banner />
-      <Divider />
+      {showBanner && (
+        <>
+          <Banner />
+          <Divider />
+        </>
+      )}
 
       {/* Step 1: Detecting */}
       {step === "detecting" && (
@@ -308,6 +325,13 @@ function ResultsView({ results }: { results: ClientInstallResult[] }): React.Rea
         </Box>
       )}
 
+      {created.length > 0 && (
+        <Box marginLeft={2} marginTop={1}>
+          <Text color={colors.success} bold>{"✔ "}</Text>
+          <Text>MCP config is ready. Now let your agent lint your context files.</Text>
+        </Box>
+      )}
+
       <NextStep>
         {`Run ${"`"}agent-lint doctor${"`"} to scan your workspace.`}
       </NextStep>
@@ -337,5 +361,5 @@ export function runInitCommand(options: { yes?: boolean; all?: boolean; stdout?:
     return;
   }
 
-  render(<InitWizard options={options} />);
+  render(<InitWizard options={options} showBanner={true} />);
 }

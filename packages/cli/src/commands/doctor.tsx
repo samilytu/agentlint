@@ -18,13 +18,20 @@ import { colors } from "../ui/theme.js";
 
 const REPORT_FILENAME = ".agentlint-report.md";
 
-type DoctorResult = {
+export type DoctorResult = {
   discoveredCount: number;
   missingCount: number;
   discovered: string[];
   missing: string[];
   markdown: string;
 };
+
+export interface DoctorAppProps {
+  /** When provided, called instead of process exit (embedded mode) */
+  onComplete?: (result: DoctorResult) => void;
+  /** Whether to show banner (standalone mode). Default: true */
+  showBanner?: boolean;
+}
 
 function runDoctor(): DoctorResult {
   const rootPath = process.cwd();
@@ -42,7 +49,7 @@ function runDoctor(): DoctorResult {
   };
 }
 
-function DoctorApp(): React.ReactNode {
+export function DoctorApp({ onComplete, showBanner = true }: DoctorAppProps): React.ReactNode {
   const [phase, setPhase] = useState<"scanning" | "done">("scanning");
   const [result, setResult] = useState<DoctorResult | null>(null);
 
@@ -59,10 +66,23 @@ function DoctorApp(): React.ReactNode {
     return () => clearImmediate(id);
   }, []);
 
+  // When done: call onComplete callback (embedded) or let Ink exit naturally (standalone)
+  useEffect(() => {
+    if (phase !== "done" || !result) return;
+    if (onComplete) {
+      const id = setTimeout(() => onComplete(result), 300);
+      return () => clearTimeout(id);
+    }
+  }, [phase, result, onComplete]);
+
   return (
     <Box flexDirection="column">
-      <Banner />
-      <Divider />
+      {showBanner && (
+        <>
+          <Banner />
+          <Divider />
+        </>
+      )}
 
       {phase === "scanning" && (
         <Box marginTop={1} marginLeft={2}>
@@ -134,5 +154,5 @@ export function runDoctorCommand(options: {
     return;
   }
 
-  render(<DoctorApp />);
+  render(<DoctorApp showBanner={true} />);
 }
