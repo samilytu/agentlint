@@ -27,6 +27,13 @@ bun.lockb
 # IDE / agent
 .sisyphus/
 .windsurf/
+.cursor/
+.codex/
+.mcp.json
+opencode.json
+
+# generated report
+.agentlint-report.md
 
 # Windows artifacts
 NUL
