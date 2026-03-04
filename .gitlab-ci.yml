@@ -27,6 +27,7 @@ test:
 # Publish @agent-lint/mcp — OIDC trusted publishing (no tokens needed)
 # Requires trusted publisher configured on npmjs.com:
 #   Namespace: bsamilozturk | Project: agentlint | CI file: .gitlab-ci.yml
+#   Environment: (leave blank on npmjs.com — no environment field used here)
 # ---------------------------------------------------------------------------
 publish-mcp:
   stage: publish
@@ -34,32 +35,42 @@ publish-mcp:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
-    SIGSTORE_ID_TOKEN:
-      aud: sigstore
   before_script:
     - corepack enable
     - corepack prepare pnpm@${PNPM_VERSION} --activate
     - pnpm install --frozen-lockfile
     - pnpm run build
   script:
-    - node --version
+    # Upgrade npm to latest (OIDC requires npm >= 11.5.1)
     - npm install -g npm@latest
+    - echo "--- Debug info ---"
+    - node --version
     - npm --version
     - echo "NPM_ID_TOKEN is set:${NPM_ID_TOKEN:+yes}"
+    - echo "NODE_AUTH_TOKEN is set:${NODE_AUTH_TOKEN:+yes}"
+    - echo "--- npmrc files ---"
+    - cat ~/.npmrc 2>/dev/null || echo "no ~/.npmrc"
+    - cat .npmrc 2>/dev/null || echo "no ./.npmrc"
+    - cat /builds/bsamilozturk/agentlint/.npmrc 2>/dev/null || echo "no root .npmrc"
+    - cat /builds/bsamilozturk/agentlint/packages/mcp/.npmrc 2>/dev/null || echo "no mcp .npmrc"
+    - echo "--- npm config ---"
+    - npm config list
+    - echo "--- auth-related env vars ---"
+    - env | grep -i auth || echo "no auth env vars"
+    - env | grep -i npm | grep -v ID_TOKEN || echo "no npm env vars"
+    - echo "--- Publishing ---"
     - cd packages/mcp
     - npm publish --access public --provenance
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/
     - if: $CI_PIPELINE_SOURCE == "web"
       when: manual
-  environment:
-    name: npm-mcp
-    url: https://www.npmjs.com/package/@agent-lint/mcp
 
 # ---------------------------------------------------------------------------
 # Publish @agent-lint/cli — OIDC trusted publishing (no tokens needed)
 # Requires trusted publisher configured on npmjs.com:
 #   Namespace: bsamilozturk | Project: agentlint | CI file: .gitlab-ci.yml
+#   Environment: (leave blank on npmjs.com — no environment field used here)
 # ---------------------------------------------------------------------------
 publish-cli:
   stage: publish
@@ -67,24 +78,21 @@ publish-cli:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
-    SIGSTORE_ID_TOKEN:
-      aud: sigstore
   before_script:
     - corepack enable
     - corepack prepare pnpm@${PNPM_VERSION} --activate
     - pnpm install --frozen-lockfile
     - pnpm run build
   script:
-    - node --version
     - npm install -g npm@latest
+    - echo "--- Debug info ---"
+    - node --version
     - npm --version
     - echo "NPM_ID_TOKEN is set:${NPM_ID_TOKEN:+yes}"
+    - echo "--- Publishing ---"
     - cd packages/cli
     - npm publish --access public --provenance
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/
     - if: $CI_PIPELINE_SOURCE == "web"
       when: manual
-  environment:
-    name: npm-cli
-    url: https://www.npmjs.com/package/@agent-lint/cli
