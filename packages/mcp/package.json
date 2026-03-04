@@ -1,9 +1,9 @@
 {
   "name": "@agent-lint/mcp",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "license": "MIT",
-  "description": "MCP server for AI agent context artifact orchestration. Provides guidelines, action plans, and maintenance rules for AGENTS.md, skills, rules, workflows, and plans. No LLM, no database.",
+  "description": "MCP server for AI agent context artifact orchestration. Guidelines, workspace scanning, and maintenance rules for AGENTS.md, skills, rules, workflows, and plans. No LLM, no database.",
   "author": "Agent Lint Contributors",
   "repository": {
     "type": "git",

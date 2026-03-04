@@ -34,3 +34,6 @@ Thumbs.db
 
 # screenshot generator temp
 docs/screenshots/_tmp_ansi.txt
+
+# research / scratch docs
+docs/guidelines_research_reports.txt

@@ -56,43 +56,6 @@ function stdioEntry(): Record<string, unknown> {
   return { command: MCP_COMMAND, args: [...MCP_ARGS] };
 }
 
-export function buildMcpPayload(client: McpClient): Record<string, unknown> {
-  const entry = stdioEntry();
-
-  switch (client.id) {
-    case "vscode":
-      return { [client.rootKey]: { [MCP_SERVER_NAME]: { type: "stdio", ...entry } } };
-
-    case "zed":
-      return {
-        [client.rootKey]: {
-          [MCP_SERVER_NAME]: {
-            command: { path: MCP_COMMAND, args: [...MCP_ARGS] },
-            settings: {},
-          },
-        },
-      };
-
-    case "opencode":
-      return {
-        [client.rootKey]: {
-          [MCP_SERVER_NAME]: {
-            type: "local",
-            command: [MCP_COMMAND, ...MCP_ARGS],
-            enabled: true,
-          },
-        },
-      };
-
-    case "codex":
-      // TOML handled separately — return flat server config
-      return { command: MCP_COMMAND, args: [...MCP_ARGS] };
-
-    default:
-      return { [client.rootKey]: { [MCP_SERVER_NAME]: entry } };
-  }
-}
-
 /** Returns just the server entry (without rootKey wrapper) for merge operations */
 export function buildServerEntry(client: McpClient): Record<string, unknown> {
   switch (client.id) {

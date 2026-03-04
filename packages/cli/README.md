@@ -1,74 +1,75 @@
 # @agent-lint/cli
 
-CLI for AI agent context artifact analysis and quality scoring.
+CLI for AI agent context artifact orchestration.
 
 **Zero LLM dependencies.** Fully deterministic. Local-first. No database. No auth.
 
 ## What It Does
 
-Static analysis tool that evaluates AI-agent context artifacts from the command line:
+Command-line tool for setting up and maintaining AI-agent context artifacts:
 
 - `AGENTS.md` / `CLAUDE.md`
 - Skills, Rules, Workflows, Plans
 
-Reproducible quality scoring across **12 metrics** — perfect for CI/CD pipelines and local development.
+Auto-detect your IDE, scan your workspace for missing or incomplete artifacts, and get a copy-paste prompt to start improving them.
 
 ## Quick Start
 
 ```bash
-# Analyze a single artifact
-npx @agent-lint/cli analyze AGENTS.md
+# Auto-detect IDE and create MCP config
+npx @agent-lint/cli init
 
-# Scan entire workspace
-npx @agent-lint/cli scan .
+# Scan workspace and generate fix report
+npx @agent-lint/cli doctor
 
-# Get numeric score
-npx @agent-lint/cli score AGENTS.md
+# Get a copy-paste prompt for your IDE chat
+npx @agent-lint/cli prompt
 ```
 
 ## Commands
 
-### `analyze <path>`
+### `init`
 
-Full analysis of a single artifact file.
-
-```bash
-agent-lint analyze AGENTS.md
-agent-lint analyze AGENTS.md --type agents --verbose
-agent-lint analyze AGENTS.md --json
-agent-lint analyze AGENTS.md --watch
-```
-
-### `scan [dir]`
-
-Scan a directory for all AI agent artifacts and analyze them.
+Interactive TUI wizard that auto-detects your IDE (Cursor, Windsurf, VS Code, Claude, OpenCode, Zed, Codex, Cline, Kiro) and creates the appropriate MCP config file.
 
 ```bash
-agent-lint scan .
-agent-lint scan . --json --fail-below 70
-agent-lint scan ./docs --max-files 50
-agent-lint scan . --watch
+agent-lint init
 ```
 
-### `score <path>`
+Supports both project-level and global scope installation. Backs up existing configs before merging.
 
-Output only the numeric quality score (useful for scripting).
+### `doctor`
+
+Scan your workspace for all AI agent artifacts, identify gaps, and generate a fix report.
 
 ```bash
-agent-lint score AGENTS.md          # prints: 82
-agent-lint score AGENTS.md --json   # prints JSON with score + dimensions
+agent-lint doctor
+agent-lint doctor --stdout    # Print to stdout instead of file
+agent-lint doctor --json      # JSON output for programmatic use
 ```
 
-## Options
+### `prompt`
 
-| Flag               | Description                                       |
-| ------------------ | ------------------------------------------------- |
-| `--json`           | Output as JSON                                    |
-| `--verbose`        | Show all metric details                           |
-| `--quiet`          | Suppress operational logs                         |
-| `--fail-below <n>` | Exit with code 1 if score < n (CI mode)           |
-| `--type <type>`    | Artifact type: `agents` `skills` `rules` `workflows` `plans` |
-| `--watch`          | Watch for file changes and re-analyze             |
+Output a copy-paste prompt for your IDE's AI chat. Paste it and your coding agent will use Agent Lint's MCP tools to scan, create, and fix all context artifacts.
+
+```bash
+agent-lint prompt
+```
+
+## Supported IDEs
+
+| IDE | Config Format | Scope |
+| --- | ------------- | ----- |
+| Cursor | JSON | Project / Global |
+| Windsurf | JSON | Project / Global |
+| VS Code | JSON | Project / Global |
+| Claude Desktop | JSON | Global |
+| Claude Code | CLI | Global |
+| OpenCode | JSON | Project |
+| Zed | JSON | Project / Global |
+| Codex | TOML | Global |
+| Cline | JSON | Project / Global |
+| Kiro | JSON | Project |
 
 ## CI/CD Integration
 
@@ -92,30 +93,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npx -y @agent-lint/cli scan . --json --fail-below 70
+      - run: npx -y @agent-lint/cli doctor --json
 ```
-
-## Exit Codes
-
-| Code | Meaning                                  |
-| ---- | ---------------------------------------- |
-| `0`  | Success — all artifacts passed           |
-| `1`  | At least one artifact below threshold    |
-| `2`  | Configuration or usage error             |
-
-## Quality Metrics (12)
-
-`clarity` · `specificity` · `scope-control` · `completeness` · `actionability` · `verifiability` · `safety` · `injection-resistance` · `secret-hygiene` · `token-efficiency` · `platform-fit` · `maintainability`
 
 ## Supported Artifact Types
 
-| Type      | File Patterns                                               |
-| --------- | ----------------------------------------------------------- |
-| Agents    | `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md` |
-| Rules     | `.cursor/rules/*.md`, `.windsurf/rules/*.md`                |
-| Skills    | `skills/*.md`                                               |
-| Workflows | `workflows/*.md`, `docs/workflows/*.md`                     |
-| Plans     | `plans/*.md`, `docs/plans/*.md`                             |
+| Type | File Patterns |
+| ---- | ------------- |
+| **Agents** | `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md` |
+| **Rules** | `.cursor/rules/*.md`, `.windsurf/rules/*.md` |
+| **Skills** | `.cursor/skills/*/SKILL.md`, `.windsurf/skills/*/SKILL.md` |
+| **Workflows** | `.cursor/workflows/*.md`, `.windsurf/workflows/*.md` |
+| **Plans** | `docs/*.md`, `.windsurf/plans/*.md` |
 
 ## Related
 
