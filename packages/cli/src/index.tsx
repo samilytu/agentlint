@@ -36,13 +36,13 @@ function createProgram(): Command {
 
   program
     .name("agent-lint")
-    .description("Meta-agent orchestrator for AI coding agent context artifacts")
+    .description("Set up Agent Lint MCP config, scan for stale context files, and print prompts for your coding agent")
     .version(VERSION)
     .showHelpAfterError();
 
   program
     .command("init")
-    .description("Set up Agent Lint MCP config for detected IDE clients")
+    .description("Set up Agent Lint MCP config for supported IDE clients")
     .option("-y, --yes", "Skip confirmation prompts")
     .option("--all", "Generate configs for all supported clients, not just detected ones")
     .option("--stdout", "Print results to stdout instead of TUI")
@@ -52,7 +52,7 @@ function createProgram(): Command {
 
   program
     .command("doctor")
-    .description("Scan workspace for context artifacts and generate a fix report")
+    .description("Scan the workspace and generate a context maintenance report")
     .option("--stdout", "Print report to stdout instead of writing a file")
     .option("--json", "Output discovery results as JSON")
     .action((options: { stdout?: boolean; json?: boolean }) => {
@@ -61,7 +61,7 @@ function createProgram(): Command {
 
   program
     .command("prompt")
-    .description("Print a copy-paste prompt for your IDE chat to trigger autofix")
+    .description("Print a ready-to-paste IDE prompt for the next maintenance step")
     .option("--stdout", "Print prompt to stdout instead of TUI")
     .action((options: { stdout?: boolean }) => {
       runPromptCommand(options);

@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Generates clean ANSI-colored terminal output that matches the Ink TUI,
- * then pipes through `freeze` to create beautiful PNG screenshots.
+ * Generate polished CLI screenshots for the README.
  *
  * Usage: node scripts/generate-screenshots.mjs
  */
@@ -11,13 +10,51 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-// --- Theme (matches packages/cli/src/ui/theme.ts) ---
+const rootDir = process.cwd();
+const cliPackageJson = JSON.parse(
+  fs.readFileSync(path.join(rootDir, "packages", "cli", "package.json"), "utf-8"),
+);
+const themeSource = fs.readFileSync(
+  path.join(rootDir, "packages", "cli", "src", "ui", "theme.ts"),
+  "utf-8",
+);
+
+function extractStringConstant(source, name) {
+  const match = source.match(new RegExp(`export const ${name} = "([^"]+)";`));
+  if (!match) {
+    throw new Error(`Could not extract string constant: ${name}`);
+  }
+  return match[1];
+}
+
+function extractArrayConstant(source, name) {
+  const match = source.match(new RegExp(`export const ${name} = \\[(.*?)\\];`, "s"));
+  if (!match) {
+    throw new Error(`Could not extract array constant: ${name}`);
+  }
+  return Function(`"use strict"; return [${match[1]}];`)();
+}
+
+const BANNER_LINES = extractArrayConstant(themeSource, "BANNER_LINES");
+const BANNER_LINES_2 = extractArrayConstant(themeSource, "BANNER_LINES_2");
+const TAGLINE = extractStringConstant(themeSource, "TAGLINE");
+const VERSION = cliPackageJson.version;
+
+const CLI_DESCRIPTION =
+  "Set up Agent Lint MCP config, scan for stale context files, and print prompts for your coding agent";
+const INIT_DESCRIPTION = "Set up Agent Lint MCP config for supported IDE clients";
+const DOCTOR_DESCRIPTION = "Scan the workspace and generate a context maintenance report";
+const PROMPT_DESCRIPTION = "Print a ready-to-paste IDE prompt for the next maintenance step";
+const PROMPT_WITH_REPORT =
+  "Read the file .agentlint-report.md in this project and execute the recommended context maintenance fixes. " +
+  "Use the agentlint MCP tools (agentlint_get_guidelines, agentlint_plan_workspace_autofix) " +
+  "for artifact-specific guidance before editing. Apply the changes directly.";
 
 const colors = {
-  primary: "#6367FF",
-  secondary: "#8494FF",
-  tertiary: "#C9BEFF",
-  accent: "#FFDBFD",
+  primary: "#84B179",
+  secondary: "#A2CB8B",
+  tertiary: "#C7EABB",
+  accent: "#E8F5BD",
   dim: "#555555",
   success: "#22c55e",
   warning: "#eab308",
@@ -26,16 +63,14 @@ const colors = {
 };
 
 const gradient = [
-  "#6367FF",
-  "#7078FF",
-  "#8494FF",
-  "#A3A9FF",
-  "#C9BEFF",
-  "#E4CCFE",
-  "#FFDBFD",
+  "#84B179",
+  "#93BE82",
+  "#A2CB8B",
+  "#B5DAA3",
+  "#C7EABB",
+  "#D8EFBC",
+  "#E8F5BD",
 ];
-
-// --- ANSI helpers ---
 
 function hexToAnsi(hex) {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -64,37 +99,60 @@ function colored(hex, text) {
   return `${fg(hex)}${text}${RESET}`;
 }
 
-// --- Components (match packages/cli/src/ui/components.tsx) ---
+function interpolateColor(start, end, ratio) {
+  const r1 = parseInt(start.slice(1, 3), 16);
+  const g1 = parseInt(start.slice(3, 5), 16);
+  const b1 = parseInt(start.slice(5, 7), 16);
+  const r2 = parseInt(end.slice(1, 3), 16);
+  const g2 = parseInt(end.slice(3, 5), 16);
+  const b2 = parseInt(end.slice(5, 7), 16);
 
-const BANNER_LINES = [
-  " █████╗  ██████╗ ███████╗███╗   ██╗████████╗",
-  "██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝",
-  "███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   ",
-  "██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   ",
-  "██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   ",
-  "╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   ",
-];
+  const r = Math.round(r1 + (r2 - r1) * ratio);
+  const g = Math.round(g1 + (g2 - g1) * ratio);
+  const b = Math.round(b1 + (b2 - b1) * ratio);
 
-const BANNER_LINES_2 = [
-  "██╗     ██╗███╗   ██╗████████╗",
-  "██║     ██║████╗  ██║╚══██╔══╝",
-  "██║     ██║██╔██╗ ██║   ██║   ",
-  "██║     ██║██║╚██╗██║   ██║   ",
-  "███████╗██║██║ ╚████║   ██║   ",
-  "╚══════╝╚═╝╚═╝  ╚═══╝   ╚═╝   ",
-];
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
 
-const TAGLINE = "Meta-agent orchestrator for AI coding agents";
-const VERSION = "0.3.1";
+function getGradientColor(position, total, stops) {
+  if (total <= 1) {
+    return stops[0];
+  }
+
+  const progress = position / (total - 1);
+  const segment = progress * (stops.length - 1);
+  const index = Math.min(Math.floor(segment), stops.length - 2);
+  const localProgress = segment - index;
+
+  return interpolateColor(stops[index], stops[index + 1], localProgress);
+}
+
+function renderGradientText(text) {
+  const chars = [...text];
+  const segments = [];
+
+  for (let i = 0; i < chars.length; i += 1) {
+    const color = getGradientColor(i, chars.length, gradient);
+    const previous = segments[segments.length - 1];
+
+    if (previous && previous.color === color) {
+      previous.text += chars[i];
+    } else {
+      segments.push({ color, text: chars[i] });
+    }
+  }
+
+  return segments.map((segment) => bold(segment.color, segment.text)).join("");
+}
 
 function renderBanner() {
   const lines = [];
-  for (let i = 0; i < BANNER_LINES.length; i++) {
-    const g = gradient[i] ?? gradient[gradient.length - 1];
-    lines.push(bold(g, BANNER_LINES[i]) + " " + bold(g, BANNER_LINES_2[i] ?? ""));
+  for (let i = 0; i < BANNER_LINES.length; i += 1) {
+    const fullLine = `${BANNER_LINES[i]} ${BANNER_LINES_2[i] ?? ""}`;
+    lines.push(renderGradientText(fullLine));
   }
   lines.push(
-    " " + bold(colors.accent, "*") + " " + italic(colors.tertiary, TAGLINE) + " " + colored(colors.dim, `v${VERSION}`)
+    " " + bold(colors.accent, "*") + " " + italic(colors.tertiary, TAGLINE) + " " + colored(colors.dim, `v${VERSION}`),
   );
   return lines.join("\n");
 }
@@ -115,10 +173,6 @@ function renderSkipItem(text) {
   return "   " + colored(colors.warning, "~ ") + colored(colors.muted, text);
 }
 
-function renderErrorItem(text) {
-  return "   " + bold(colors.error, "x ") + text;
-}
-
 function renderInfoItem(text) {
   return "   " + bold(colors.accent, "* ") + text;
 }
@@ -131,127 +185,148 @@ function renderStatusBar(items) {
   const inner = items
     .map((item) => colored(colors.muted, item.label) + " " + bold(item.color, String(item.value)))
     .join("   ");
-  return " ┌─────────────────────────────┐\n │  " + inner + "  │\n └─────────────────────────────┘";
+  const width = Math.max(inner.length + 4, 28);
+  return (
+    " ┌" + "─".repeat(width) + "┐\n" +
+    " │  " + inner + "  │\n" +
+    " └" + "─".repeat(width) + "┘"
+  );
 }
 
 function renderPromptBox(text) {
-  const border = colors.secondary;
-  const maxW = 72;
-  const lines = [];
+  const maxWidth = 72;
   const words = text.split(" ");
-  let cur = "";
-  for (const w of words) {
-    if (cur.length + w.length + 1 > maxW) {
-      lines.push(cur);
-      cur = w;
+  const lines = [];
+  let current = "";
+
+  for (const word of words) {
+    if ((current + " " + word).trim().length > maxWidth) {
+      lines.push(current);
+      current = word;
     } else {
-      cur = cur ? cur + " " + w : w;
+      current = current ? `${current} ${word}` : word;
     }
   }
-  if (cur) lines.push(cur);
 
-  const width = Math.max(...lines.map((l) => l.length)) + 4;
-  const top = colored(border, "╭" + "─".repeat(width) + "╮");
-  const bot = colored(border, "╰" + "─".repeat(width) + "╯");
+  if (current) {
+    lines.push(current);
+  }
+
+  const width = Math.max(...lines.map((line) => line.length)) + 4;
+  const top = colored(colors.secondary, "╭" + "─".repeat(width) + "╮");
+  const bottom = colored(colors.secondary, "╰" + "─".repeat(width) + "╯");
   const body = lines
-    .map((l) => colored(border, "│") + "  " + colored(colors.tertiary, l.padEnd(width - 2)) + colored(border, "│"))
+    .map((line) => (
+      colored(colors.secondary, "│") +
+      "  " +
+      colored(colors.tertiary, line.padEnd(width - 2)) +
+      colored(colors.secondary, "│")
+    ))
     .join("\n");
-  return "\n" + top + "\n" + body + "\n" + bot;
+
+  return "\n" + top + "\n" + body + "\n" + bottom;
 }
 
-function renderHint(text) {
-  return "\n   " + colored(colors.tertiary, "? ") + italic(colors.muted, text);
-}
+function wrapHelpLine(command, description, width = 54) {
+  const head = `  ${colored(colors.success, command)} `;
+  const continuation = " ".repeat(command.length + 4);
+  const words = description.split(" ");
+  const lines = [];
+  let current = "";
 
-// --- Scenes ---
+  for (const word of words) {
+    if ((current + " " + word).trim().length > width) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = current ? `${current} ${word}` : word;
+    }
+  }
+
+  if (current) {
+    lines.push(current);
+  }
+
+  return lines
+    .map((line, index) => (index === 0 ? head + line : continuation + line))
+    .join("\n");
+}
 
 function sceneInit() {
-  const lines = [
+  return [
     renderBanner(),
     renderDivider(),
-    renderSectionTitle("Created"),
-    renderSuccessItem(".vscode/mcp.json (VS Code)"),
-    renderSectionTitle("Skipped"),
-    renderSkipItem(".windsurf/mcp_config.json (Windsurf) — already exists"),
-    renderSectionTitle("Manual steps"),
-    renderInfoItem("Claude Code CLI: Run: claude mcp add agentlint -- npx -y @agent-lint/mcp"),
-    renderNextStep('Run `agent-lint doctor` to scan your workspace.'),
+    renderSectionTitle("Configured"),
+    renderSuccessItem(".cursor/mcp.json (Cursor, workspace)"),
+    renderSuccessItem(".vscode/mcp.json (VS Code, workspace)"),
+    renderSectionTitle("Already configured"),
+    renderSkipItem(".mcp.json (Claude Code) - already exists"),
+    renderSkipItem(".codex/config.toml (Codex CLI) - already exists"),
     "",
-  ];
-  return lines.join("\n");
+    renderSuccessItem("MCP config is ready. Now let your agent lint your context files."),
+    renderNextStep("Run `agent-lint doctor` to scan your workspace."),
+    "",
+  ].join("\n");
 }
 
 function sceneDoctor() {
-  const lines = [
+  return [
     renderBanner(),
     renderDivider(),
     renderStatusBar([
-      { label: "Found", value: 24, color: colors.success },
+      { label: "Found", value: 9, color: colors.success },
       { label: "Missing", value: 0, color: colors.success },
     ]),
     renderSectionTitle("Discovered artifacts"),
-    renderSuccessItem(".windsurf/rules/deneme-rule1.md (rules)"),
-    renderSuccessItem(".windsurf/skills/testing/SKILL.md (skills)"),
     renderSuccessItem("AGENTS.md (agents)"),
-    renderSuccessItem("docs/great_plan.md (plans)"),
-    renderSuccessItem("examples/github-action.yml (agents)"),
-    renderSuccessItem("fixtures/good-agents.md (agents)"),
-    renderSuccessItem("fixtures/good-plans.md (plans)"),
-    renderSuccessItem("fixtures/good-rules.md (rules)"),
-    renderSuccessItem("fixtures/good-skills.md (skills)"),
-    renderSuccessItem("fixtures/good-workflows.md (workflows)"),
-    renderSuccessItem("packages/cli/README.md (agents)"),
-    renderSuccessItem("packages/mcp/README.md (agents)"),
-    renderSuccessItem("README.md (agents)"),
+    renderSuccessItem("CLAUDE.md (agents)"),
+    renderSuccessItem(".cursor/rules/nextjs-app-router.mdc (rules)"),
+    renderSuccessItem(".cursor/rules/tanstack-query-cache-keys.mdc (rules)"),
+    renderSuccessItem(".cursor/rules/server-actions-and-zod.mdc (rules)"),
+    renderSuccessItem("skills/nextjs-pr-review/SKILL.md (skills)"),
+    renderSuccessItem("skills/api-route-review/SKILL.md (skills)"),
+    renderSuccessItem("docs/workflows/vercel-preview-checks.md (workflows)"),
+    renderSuccessItem("docs/plans/auth-and-billing-rollout.md (plans)"),
     renderSectionTitle("Report saved"),
     renderInfoItem(".agentlint-report.md"),
-    renderNextStep("Run agent-lint prompt to get a copy-paste prompt for your IDE."),
+    renderNextStep("Run agent-lint prompt to get a ready-to-paste prompt for your IDE."),
     "",
-  ];
-  return lines.join("\n");
+  ].join("\n");
 }
 
 function scenePrompt() {
-  const prompt =
-    "Read the file .agentlint-report.md in this project and execute all " +
-    "recommended fixes. Use the agentlint MCP tools " +
-    "(agentlint_get_guidelines, agentlint_plan_workspace_autofix) for " +
-    "detailed guidelines on each artifact type. Apply all changes directly.";
-
-  const lines = [
+  return [
     renderBanner(),
     renderDivider(),
-    "\n " + bold(colors.success, "+") + " " + bold(colors.success, "Copied to clipboard!") + " " + colored(colors.muted, "Paste it into your IDE chat."),
-    renderPromptBox(prompt),
+    "",
+    " " + bold(colors.success, "+") + " " + bold(colors.success, "Copied to clipboard!") + " " + colored(colors.muted, "Paste it into your IDE chat."),
+    renderPromptBox(PROMPT_WITH_REPORT),
     "   " + bold(colors.success, "+ ") + colored(colors.muted, "Using report from .agentlint-report.md"),
     "",
-  ];
-  return lines.join("\n");
+  ].join("\n");
 }
 
 function sceneHelp() {
-  const lines = [
+  return [
     bold(colors.primary, "Usage:") + " agent-lint [options] [command]",
     "",
-    colored(colors.muted, "Meta-agent orchestrator for AI coding agent context artifacts"),
+    colored(colors.muted, "Set up Agent Lint MCP config, scan for stale context files, and print prompts"),
+    colored(colors.muted, "for your coding agent"),
     "",
     bold(colors.primary, "Options:"),
     "  " + colored(colors.success, "-V, --version") + "     output the version number",
     "  " + colored(colors.success, "-h, --help") + "        display help for command",
     "",
     bold(colors.primary, "Commands:"),
-    "  " + colored(colors.success, "init") + " [options]    Set up Agent Lint MCP config for detected IDE clients",
-    "  " + colored(colors.success, "doctor") + " [options]  Scan workspace for context artifacts and generate a fix report",
-    "  " + colored(colors.success, "prompt") + " [options]  Print a copy-paste prompt for your IDE chat to trigger autofix",
-    "  " + colored(colors.success, "help") + " [command]    display help for command",
+    wrapHelpLine("init [options]", INIT_DESCRIPTION),
+    wrapHelpLine("doctor [options]", DOCTOR_DESCRIPTION),
+    wrapHelpLine("prompt [options]", PROMPT_DESCRIPTION),
+    "  " + colored(colors.success, "help [command]") + "    display help for command",
     "",
-  ];
-  return lines.join("\n");
+  ].join("\n");
 }
 
-// --- Freeze runner ---
-
-const FREEZE_COMMON = [
+const freezeArgs = [
   "--theme", "Catppuccin Mocha",
   "--border.radius", "8",
   "--window",
@@ -265,39 +340,40 @@ const FREEZE_COMMON = [
 ];
 
 function runFreeze(ansiContent, outputPath) {
-  const tmpFile = path.join("docs", "screenshots", "_tmp_ansi.txt");
+  const tmpFile = path.join(rootDir, "docs", "screenshots", "_tmp_ansi.txt");
   fs.writeFileSync(tmpFile, ansiContent, "utf-8");
 
-  const args = [...FREEZE_COMMON, "--output", outputPath, tmpFile];
   try {
-    execSync(`freeze ${args.map((a) => `"${a}"`).join(" ")}`, {
-      stdio: "inherit",
-      cwd: process.cwd(),
-    });
+    execSync(
+      `freeze ${[...freezeArgs, "--output", outputPath, tmpFile].map((arg) => `"${arg}"`).join(" ")}`,
+      { cwd: rootDir, stdio: "inherit" },
+    );
   } finally {
-    if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+    if (fs.existsSync(tmpFile)) {
+      fs.unlinkSync(tmpFile);
+    }
   }
 }
 
-// --- Main ---
-
-const outDir = path.join("docs", "screenshots");
-if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+const outputDir = path.join(rootDir, "docs", "screenshots");
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
 
 const scenes = [
-  { name: "init", fn: sceneInit, file: "demo-init" },
-  { name: "doctor", fn: sceneDoctor, file: "demo-doctor" },
-  { name: "prompt", fn: scenePrompt, file: "demo-prompt" },
-  { name: "help", fn: sceneHelp, file: "demo-help" },
+  { file: "demo-init", render: sceneInit },
+  { file: "demo-doctor", render: sceneDoctor },
+  { file: "demo-prompt", render: scenePrompt },
+  { file: "demo-help", render: sceneHelp },
 ];
 
 for (const scene of scenes) {
-  const ansi = scene.fn();
+  const ansi = scene.render();
   for (const ext of ["png", "svg"]) {
-    const out = path.join(outDir, `${scene.file}.${ext}`);
-    process.stderr.write(`Generating ${out}...\n`);
-    runFreeze(ansi, out);
-    process.stderr.write(`  ✓ ${out}\n`);
+    const outputPath = path.join(outputDir, `${scene.file}.${ext}`);
+    process.stderr.write(`Generating ${outputPath}...\n`);
+    runFreeze(ansi, outputPath);
+    process.stderr.write(`  OK ${outputPath}\n`);
   }
 }
 

@@ -15,13 +15,13 @@ import { colors } from "../ui/theme.js";
 const REPORT_FILENAME = ".agentlint-report.md";
 
 const PROMPT_WITH_REPORT =
-  "Read the file .agentlint-report.md in this project and execute all recommended fixes. " +
+  "Read the file .agentlint-report.md in this project and execute the recommended context maintenance fixes. " +
   "Use the agentlint MCP tools (agentlint_get_guidelines, agentlint_plan_workspace_autofix) " +
-  "for detailed guidelines on each artifact type. Apply all changes directly.";
+  "for artifact-specific guidance before editing. Apply the changes directly.";
 
 const PROMPT_WITHOUT_REPORT =
-  "Run agentlint_plan_workspace_autofix to scan this project for AI agent context artifacts " +
-  "(AGENTS.md, skills, rules, workflows, plans). Then execute the fix plan step by step. " +
+  "Run agentlint_plan_workspace_autofix to scan this project for agent context artifacts " +
+  "(AGENTS.md, CLAUDE.md, rules, skills, workflows, and plans). Then execute the fix plan step by step. " +
   "Use agentlint_get_guidelines for each artifact type before editing. " +
   "Apply all changes directly.";
 

@@ -121,7 +121,7 @@ export function DoctorApp({ onComplete, showBanner = true }: DoctorAppProps): Re
           <InfoItem>{REPORT_FILENAME}</InfoItem>
 
           <NextStep>
-            {`Run ${"agent-lint prompt"} to get a copy-paste prompt for your IDE.`}
+            {`Run ${"agent-lint prompt"} to get a ready-to-paste prompt for your IDE.`}
           </NextStep>
 
           {onComplete && (

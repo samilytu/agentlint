@@ -64,4 +64,4 @@ export const BANNER_LINES_2 = [
   "╚══════╝╚═╝╚═╝  ╚═══╝   ╚═╝   ",
 ];
 
-export const TAGLINE = "Keep AGENTS.md, rules, and skills in sync";
+export const TAGLINE = "Keep AGENTS.md, rules, and skills structured, current, and codebase-aware.";
