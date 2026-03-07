@@ -4,7 +4,7 @@
 
 Bad context = bad code.
 
-Keep `AGENTS.md`, rules, and skills in sync with your codebase.
+Keep `AGENTS.md`, rules, and skills structured, current, and codebase-aware.
 
 Agent Lint helps coding agents maintain the files that shape how they work: `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans. It stays local, does not call an LLM, and keeps the MCP server read-only. The CLI can write MCP client config when you run `init`; repository edits still belong to the client agent.
 
@@ -44,7 +44,7 @@ What each step does:
 
 1. `init` detects supported IDE clients and writes the right MCP config entry.
 2. `doctor` scans the repository and creates a workspace report.
-3. `prompt` prints a copy-paste prompt for your IDE chat so the agent can act on the report.
+3. `prompt` prints a ready-to-paste prompt for your IDE chat so the agent can act on the report.
 
 If you prefer direct MCP usage:
 

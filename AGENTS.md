@@ -68,9 +68,9 @@ Build flow: tsup bundles JS (shared+core inlined via `noExternal`) → tsc gener
 
 | Command             | Purpose                                    |
 | ------------------- | ------------------------------------------ |
-| `agent-lint init`   | Set up MCP config for detected IDE clients |
-| `agent-lint doctor` | Scan workspace and generate fix report     |
-| `agent-lint prompt` | Print copy-paste prompt for IDE chat       |
+| `agent-lint init`   | Set up MCP config for supported IDE clients          |
+| `agent-lint doctor` | Scan the workspace and generate a maintenance report |
+| `agent-lint prompt` | Print a ready-to-paste prompt for IDE chat           |
 
 ## Quality Metrics (12)
 
@@ -98,8 +98,8 @@ npm pack --dry-run               # Verify package contents (in packages/mcp or p
 Published packages: `@agent-lint/mcp` and `@agent-lint/cli`
 Internal packages (bundled, not published): `@agent-lint/shared` and `@agent-lint/core`
 
-## Reference Documents
+## Public Reference Documents
 
-- `docs/great_plan.md` — Master plan (pre-pivot reference)
-- `docs/dikkat_edilecekler.md` — Risks and pitfalls
-- `docs/dos_and_donts.md` — Rules and constraints
+- `README.md` - Public product overview and quick start
+- `CONTRIBUTING.md` - Contribution workflow and quality gates
+- `PUBLISH.md` - Release and npm publishing process

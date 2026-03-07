@@ -23,7 +23,7 @@ import { CURRENT_TOOL_TIMEOUTS, LEGACY_TOOL_TIMEOUT_ALIASES } from "./catalog.js
 export const MAX_JSONRPC_MESSAGE_BYTES = 10 * 1024 * 1024;
 
 /**
- * Per-tool timeout values in milliseconds, from dos_and_donts.md.
+ * Per-tool timeout values in milliseconds for the current public tool surface.
  */
 export const TOOL_TIMEOUTS: Record<string, number> = {
   ...CURRENT_TOOL_TIMEOUTS,

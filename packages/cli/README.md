@@ -1,6 +1,8 @@
 # @agent-lint/cli
 
-Set up Agent Lint, scan a workspace, and print ready-to-paste prompts for your coding agent.
+CLI for keeping `AGENTS.md`, rules, and skills structured, current, and codebase-aware.
+
+Use it to set up Agent Lint, scan a workspace, and print ready-to-paste prompts for your coding agent.
 
 ## Install and Run
 
@@ -16,7 +18,7 @@ The `agent-lint` binary opens an interactive TUI in a TTY and falls back to help
 | --- | --- |
 | `agent-lint init` | Detect supported IDE clients and install an Agent Lint MCP entry |
 | `agent-lint doctor` | Scan the workspace and generate a context maintenance report |
-| `agent-lint prompt` | Print a copy-paste IDE prompt for the next maintenance step |
+| `agent-lint prompt` | Print a ready-to-paste IDE prompt for the next maintenance step |
 
 ### Common command examples
 

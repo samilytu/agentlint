@@ -1,5 +1,12 @@
 # @agent-lint/mcp Changelog
 
+## [0.3.2]
+
+### Changed
+
+- README and npm description now use the current public positioning around structured, current, codebase-aware agent context
+- Public repository cleanup removed internal planning docs from the published surface
+
 ## [0.3.1]
 
 ### Changed

@@ -1,9 +1,9 @@
 {
   "name": "@agent-lint/cli",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "license": "MIT",
-  "description": "Set up Agent Lint MCP config, scan for stale context files, and print prompts for your coding agent.",
+  "description": "CLI for keeping AGENTS.md, rules, and skills structured, current, and codebase-aware.",
   "author": "Agent Lint Contributors",
   "repository": {
     "type": "git",

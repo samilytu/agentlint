@@ -1,5 +1,12 @@
 # @agent-lint/cli Changelog
 
+## [0.4.2]
+
+### Changed
+
+- README, npm description, and help copy now use the current public positioning around structured, current, codebase-aware agent context
+- Public repository cleanup removed internal planning docs from the published surface
+
 ## [0.4.1]
 
 ### Changed

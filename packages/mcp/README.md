@@ -1,6 +1,6 @@
 # @agent-lint/mcp
 
-Local MCP server for keeping `AGENTS.md`, rules, and skills aligned with a codebase.
+Read-only MCP server for keeping `AGENTS.md`, rules, and skills structured, current, and codebase-aware.
 
 ## Start the Server
 
