@@ -2,11 +2,13 @@ import { execFileSync } from "node:child_process";
 import process from "node:process";
 
 function run(command, args, options = {}) {
-  return execFileSync(command, args, {
+  const result = execFileSync(command, args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     ...options,
-  }).trim();
+  });
+
+  return typeof result === "string" ? result.trim() : "";
 }
 
 function resolveSinceRef() {

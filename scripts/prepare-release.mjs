@@ -5,11 +5,13 @@ const RELEASE_BRANCH = "release/next";
 const RELEASE_TITLE = "chore(release): prepare npm release";
 
 function run(command, args, options = {}) {
-  return execFileSync(command, args, {
+  const result = execFileSync(command, args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     ...options,
-  }).trim();
+  });
+
+  return typeof result === "string" ? result.trim() : "";
 }
 
 function listPendingChangesets() {
@@ -131,7 +133,12 @@ async function main() {
   }
   run("git", ["checkout", "-B", RELEASE_BRANCH]);
 
-  execFileSync("pnpm", ["exec", "changeset", "version"], {
+  const pnpmEntrypoint = process.env.npm_execpath;
+  if (!pnpmEntrypoint) {
+    throw new Error("npm_execpath is not set; cannot invoke pnpm reliably.");
+  }
+
+  execFileSync(process.execPath, [pnpmEntrypoint, "exec", "changeset", "version"], {
     stdio: "inherit",
   });
 
