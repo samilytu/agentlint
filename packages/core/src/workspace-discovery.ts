@@ -5,6 +5,7 @@ import {
   artifactTypeValues,
   type ArtifactType,
   getArtifactPathHints,
+  getArtifactDiscoveryPatterns,
 } from "@agent-lint/shared";
 
 export type DiscoveredArtifact = {
@@ -29,11 +30,25 @@ export type WorkspaceDiscoveryResult = {
   missing: MissingArtifact[];
 };
 
+type CandidateArtifactFile = {
+  filePath: string;
+  relativePath: string;
+  type: ArtifactType;
+};
+
+type ArtifactMatcher = {
+  type: ArtifactType;
+  regex: RegExp;
+};
+
 const SKIP_DIRS = new Set([
   "node_modules",
   ".git",
   ".next",
   ".nuxt",
+  ".turbo",
+  ".idea",
+  ".vscode",
   "dist",
   "build",
   "out",
@@ -45,68 +60,20 @@ const SKIP_DIRS = new Set([
   "target",
 ]);
 
+const ALLOWED_HIDDEN_DIRS = new Set([
+  ".agents",
+  ".claude",
+  ".cursor",
+  ".github",
+  ".skills",
+  ".windsurf",
+]);
+
 const ARTIFACT_EXTENSIONS = new Set([".md", ".mdc", ".yaml", ".yml", ".txt"]);
 
 const MAX_FILES = 200;
 const MAX_DEPTH = 6;
 const MAX_FILE_SIZE = 500_000;
-
-function shouldSkipDir(name: string): boolean {
-  return SKIP_DIRS.has(name) || name.startsWith(".");
-}
-
-function isArtifactExtension(filePath: string): boolean {
-  return ARTIFACT_EXTENSIONS.has(path.extname(filePath).toLowerCase());
-}
-
-function inferArtifactType(filePath: string, content: string): ArtifactType | null {
-  const normalized = filePath.replace(/\\/g, "/").toLowerCase();
-  const lowerContent = content.substring(0, 2000).toLowerCase();
-
-  if (/agents\.md$/i.test(normalized) || /claude\.md$/i.test(normalized)) {
-    return "agents";
-  }
-  if (normalized.includes("skill")) {
-    return "skills";
-  }
-  if (normalized.includes("rule")) {
-    return "rules";
-  }
-  if (normalized.includes("workflow") || normalized.includes("command")) {
-    return "workflows";
-  }
-  if (
-    normalized.includes("plan") ||
-    normalized.includes("roadmap") ||
-    normalized.includes("backlog")
-  ) {
-    return "plans";
-  }
-
-  if (lowerContent.includes("agents.md") || lowerContent.includes("claude.md")) {
-    return "agents";
-  }
-  if (
-    lowerContent.includes("disable-model-invocation") ||
-    lowerContent.includes("required frontmatter")
-  ) {
-    return "skills";
-  }
-  if (lowerContent.includes("activation mode") || lowerContent.includes("do block")) {
-    return "rules";
-  }
-  if (lowerContent.includes("ordered steps") || lowerContent.includes("preconditions")) {
-    return "workflows";
-  }
-  if (
-    lowerContent.includes("acceptance criteria") ||
-    lowerContent.includes("## phases")
-  ) {
-    return "plans";
-  }
-
-  return null;
-}
 
 const REQUIRED_SECTIONS: Record<ArtifactType, string[]> = {
   agents: [
@@ -150,6 +117,74 @@ const REQUIRED_SECTIONS: Record<ArtifactType, string[]> = {
   ],
 };
 
+const CANONICAL_MATCHERS: ArtifactMatcher[] = artifactTypeValues.flatMap((type) =>
+  getArtifactDiscoveryPatterns(type, "canonical").map((pattern) => ({
+    type,
+    regex: globToRegExp(pattern),
+  })),
+);
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[|\\{}()[\]^$+?.]/g, "\\$&");
+}
+
+function globToRegExp(pattern: string): RegExp {
+  const normalizedPattern = pattern.replace(/\\/g, "/");
+  let source = "^";
+
+  for (let i = 0; i < normalizedPattern.length; i++) {
+    const char = normalizedPattern[i];
+
+    if (char === "*") {
+      const next = normalizedPattern[i + 1];
+      const afterNext = normalizedPattern[i + 2];
+
+      if (next === "*" && afterNext === "/") {
+        source += "(?:.*/)?";
+        i += 2;
+        continue;
+      }
+
+      if (next === "*") {
+        source += ".*";
+        i += 1;
+        continue;
+      }
+
+      source += "[^/]*";
+      continue;
+    }
+
+    if (char === "?") {
+      source += "[^/]";
+      continue;
+    }
+
+    source += escapeRegExp(char);
+  }
+
+  source += "$";
+  return new RegExp(source, "i");
+}
+
+function shouldSkipDir(name: string): boolean {
+  return SKIP_DIRS.has(name) || (name.startsWith(".") && !ALLOWED_HIDDEN_DIRS.has(name));
+}
+
+function isArtifactExtension(filePath: string): boolean {
+  return ARTIFACT_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
+function matchArtifactType(relativePath: string): ArtifactType | null {
+  for (const matcher of CANONICAL_MATCHERS) {
+    if (matcher.regex.test(relativePath)) {
+      return matcher.type;
+    }
+  }
+
+  return null;
+}
+
 function findMissingSections(
   content: string,
   type: ArtifactType,
@@ -161,8 +196,9 @@ function findMissingSections(
 
 function collectCandidateFiles(
   rootPath: string,
+  currentPath: string,
   currentDepth: number,
-  results: string[],
+  results: CandidateArtifactFile[],
 ): void {
   if (currentDepth > MAX_DEPTH || results.length >= MAX_FILES) {
     return;
@@ -170,39 +206,64 @@ function collectCandidateFiles(
 
   let entries: fs.Dirent[];
   try {
-    entries = fs.readdirSync(rootPath, { withFileTypes: true });
+    entries = fs.readdirSync(currentPath, { withFileTypes: true });
   } catch {
     return;
   }
+
+  entries.sort((a, b) => a.name.localeCompare(b.name));
 
   for (const entry of entries) {
     if (results.length >= MAX_FILES) {
       break;
     }
 
-    const fullPath = path.join(rootPath, entry.name);
+    const fullPath = path.join(currentPath, entry.name);
 
     if (entry.isDirectory()) {
-      if (
-        !shouldSkipDir(entry.name) ||
-        entry.name === ".cursor" ||
-        entry.name === ".windsurf" ||
-        entry.name === ".claude" ||
-        entry.name === ".agents"
-      ) {
-        collectCandidateFiles(fullPath, currentDepth + 1, results);
+      if (!shouldSkipDir(entry.name)) {
+        collectCandidateFiles(rootPath, fullPath, currentDepth + 1, results);
       }
-    } else if (entry.isFile() && isArtifactExtension(entry.name)) {
-      results.push(fullPath);
+      continue;
     }
+
+    if (!entry.isFile() || !isArtifactExtension(entry.name)) {
+      continue;
+    }
+
+    const relativePath = path.relative(rootPath, fullPath).replace(/\\/g, "/");
+    const type = matchArtifactType(relativePath);
+
+    if (!type) {
+      continue;
+    }
+
+    results.push({
+      filePath: fullPath,
+      relativePath: path.relative(rootPath, fullPath),
+      type,
+    });
   }
 }
 
 function findSuggestedPath(type: ArtifactType, rootPath: string): string {
-  const hints = getArtifactPathHints(type);
-  if (hints.length > 0 && hints[0].examples.length > 0) {
-    return path.join(rootPath, hints[0].examples[0]);
+  const canonicalHints = getArtifactPathHints(type).filter(
+    (hint) => hint.discoveryTier === "canonical",
+  );
+
+  for (const hint of canonicalHints) {
+    if (hint.examples.length > 0) {
+      return path.join(rootPath, hint.examples[0]);
+    }
   }
+
+  const allHints = getArtifactPathHints(type);
+  for (const hint of allHints) {
+    if (hint.examples.length > 0) {
+      return path.join(rootPath, hint.examples[0]);
+    }
+  }
+
   return path.join(rootPath, `${type.toUpperCase()}.md`);
 }
 
@@ -210,37 +271,34 @@ export function discoverWorkspaceArtifacts(
   rootPath: string,
 ): WorkspaceDiscoveryResult {
   const resolvedRoot = path.resolve(rootPath);
-  const candidatePaths: string[] = [];
-  collectCandidateFiles(resolvedRoot, 0, candidatePaths);
+  const candidateFiles: CandidateArtifactFile[] = [];
+  collectCandidateFiles(resolvedRoot, resolvedRoot, 0, candidateFiles);
+
+  candidateFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 
   const discovered: DiscoveredArtifact[] = [];
   const foundTypes = new Set<ArtifactType>();
 
-  for (const filePath of candidatePaths) {
+  for (const candidate of candidateFiles) {
     let content: string;
     let stats: fs.Stats;
     try {
-      stats = fs.statSync(filePath);
+      stats = fs.statSync(candidate.filePath);
       if (stats.size > MAX_FILE_SIZE) {
         continue;
       }
-      content = fs.readFileSync(filePath, "utf-8");
+      content = fs.readFileSync(candidate.filePath, "utf-8");
     } catch {
       continue;
     }
 
-    const type = inferArtifactType(filePath, content);
-    if (!type) {
-      continue;
-    }
-
-    foundTypes.add(type);
-    const missingSections = findMissingSections(content, type);
+    foundTypes.add(candidate.type);
+    const missingSections = findMissingSections(content, candidate.type);
 
     discovered.push({
-      filePath,
-      relativePath: path.relative(resolvedRoot, filePath),
-      type,
+      filePath: candidate.filePath,
+      relativePath: candidate.relativePath,
+      type: candidate.type,
       exists: true,
       sizeBytes: stats.size,
       isEmpty: content.trim().length === 0,
@@ -254,7 +312,7 @@ export function discoverWorkspaceArtifacts(
       missing.push({
         type,
         suggestedPath: findSuggestedPath(type, resolvedRoot),
-        reason: `No ${type} artifact found in the workspace.`,
+        reason: `No canonical ${type} artifact found in the workspace.`,
       });
     }
   }

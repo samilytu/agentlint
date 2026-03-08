@@ -27,14 +27,26 @@ describe("buildNextActions", () => {
 
   // ── After doctor ───────────────────────────────────────────────────────
 
-  it("recommends prompt after doctor", () => {
+  it("recommends prompt after doctor when report exists", () => {
     const context: NextActionContext = {
       completedCommand: "doctor",
+      hasReport: true,
     };
     const options = buildNextActions(context);
     expect(options[0].value).toBe("prompt");
     expect(options[0].label).toContain("recommended");
     expect(options[1].value).toBe("init");
+  });
+
+  it("recommends rerunning doctor after doctor when report was not saved", () => {
+    const context: NextActionContext = {
+      completedCommand: "doctor",
+      hasReport: false,
+    };
+    const options = buildNextActions(context);
+    expect(options[0].value).toBe("doctor");
+    expect(options[0].label).toContain("recommended");
+    expect(options[1].value).toBe("prompt");
   });
 
   // ── After prompt ───────────────────────────────────────────────────────
@@ -68,7 +80,8 @@ describe("buildNextActions", () => {
     const contexts: NextActionContext[] = [
       { completedCommand: "init", initCreatedConfigs: true },
       { completedCommand: "init", initCreatedConfigs: false },
-      { completedCommand: "doctor" },
+      { completedCommand: "doctor", hasReport: true },
+      { completedCommand: "doctor", hasReport: false },
       { completedCommand: "prompt", hasReport: false },
       { completedCommand: "prompt", hasReport: true },
     ];
@@ -86,7 +99,8 @@ describe("buildNextActions", () => {
   it("returns at least 4 options for every context", () => {
     const contexts: NextActionContext[] = [
       { completedCommand: "init", initCreatedConfigs: true },
-      { completedCommand: "doctor" },
+      { completedCommand: "doctor", hasReport: true },
+      { completedCommand: "doctor", hasReport: false },
       { completedCommand: "prompt", hasReport: false },
     ];
 

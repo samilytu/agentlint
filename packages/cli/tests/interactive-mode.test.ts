@@ -6,11 +6,12 @@ import React from "react";
 import { App } from "../src/app.js";
 import { pressEnter, renderInTTY, sleep, waitFor } from "./tty-test-utils.js";
 
-const CLI_PATH = path.resolve(__dirname, "..", "dist", "index.js");
 const ROOT = path.resolve(__dirname, "../../..");
+const TSX_PATH = path.resolve(ROOT, "node_modules", "tsx", "dist", "cli.mjs");
+const SOURCE_CLI_PATH = path.resolve(ROOT, "packages", "cli", "src", "index.tsx");
 
 function run(args: string[], cwd?: string): string {
-  return execFileSync(process.execPath, [CLI_PATH, ...args], {
+  return execFileSync(process.execPath, [TSX_PATH, SOURCE_CLI_PATH, ...args], {
     cwd: cwd ?? ROOT,
     encoding: "utf-8",
     timeout: 10_000,
@@ -18,7 +19,7 @@ function run(args: string[], cwd?: string): string {
 }
 
 function runCli(args: string[], cwd?: string) {
-  return spawnSync(process.execPath, [CLI_PATH, ...args], {
+  return spawnSync(process.execPath, [TSX_PATH, SOURCE_CLI_PATH, ...args], {
     cwd: cwd ?? ROOT,
     encoding: "utf-8",
     timeout: 10_000,

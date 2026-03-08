@@ -34,6 +34,7 @@ async function withTempCwd(fn: () => Promise<void>): Promise<void> {
 describe("Embedded command flows", () => {
   afterEach(() => {
     clipboard.write.mockReset();
+    vi.restoreAllMocks();
   });
 
   it("waits for Enter before completing doctor in embedded mode", async () => {
@@ -56,6 +57,70 @@ describe("Embedded command flows", () => {
         pressEnter(session.stdin);
 
         await waitFor(() => onComplete.mock.calls.length === 1);
+      } finally {
+        session.cleanup();
+      }
+    });
+  });
+
+  it("renders readable missing artifact entries instead of object strings", async () => {
+    await withTempCwd(async () => {
+      fs.writeFileSync(path.join(process.cwd(), "AGENTS.md"), "# AGENTS\n");
+
+      const onComplete = vi.fn();
+      const session = renderInTTY(
+        React.createElement(DoctorApp, { onComplete, showBanner: false }),
+      );
+
+      try {
+        await waitFor(
+          () => session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+          { timeoutMs: 5_000 },
+        );
+
+        const output = session.getStdout();
+        expect(output).not.toContain("[object Object]");
+        expect(output).toContain("skills ->");
+        expect(output).toContain("workflows ->");
+      } finally {
+        session.cleanup();
+      }
+    });
+  });
+
+  it("surfaces report write failures instead of claiming success", async () => {
+    await withTempCwd(async () => {
+      fs.writeFileSync(path.join(process.cwd(), "AGENTS.md"), "# AGENTS\n");
+      const originalWriteFileSync = fs.writeFileSync;
+      vi.spyOn(fs, "writeFileSync").mockImplementation((file, data, options) => {
+        if (typeof file === "string" && file.endsWith(".agentlint-report.md")) {
+          throw new Error("disk full");
+        }
+        return Reflect.apply(originalWriteFileSync, fs, [file, data, options]);
+      });
+
+      const onComplete = vi.fn();
+      const session = renderInTTY(
+        React.createElement(DoctorApp, { onComplete, showBanner: false }),
+      );
+
+      try {
+        await waitFor(
+          () => session.getStdout().toUpperCase().includes("REPORT NOT SAVED"),
+          { timeoutMs: 5_000 },
+        );
+
+        const output = session.getStdout().toUpperCase();
+        expect(output).not.toContain("REPORT SAVED");
+
+        pressEnter(session.stdin);
+        await waitFor(() => onComplete.mock.calls.length === 1);
+        expect(onComplete).toHaveBeenCalledWith(
+          expect.objectContaining({
+            reportSaved: false,
+            reportError: expect.stringContaining("disk full"),
+          }),
+        );
       } finally {
         session.cleanup();
       }

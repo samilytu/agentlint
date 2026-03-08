@@ -6,35 +6,33 @@ describe("plan-builder", () => {
 
   it("builds a plan with markdown output", () => {
     const plan = buildWorkspaceAutofixPlan(fixtureWorkspace);
-    expect(plan.markdown).toBeTruthy();
     expect(plan.markdown).toContain("# Workspace Autofix Plan");
-  });
-
-  it("includes discovered artifacts section", () => {
-    const plan = buildWorkspaceAutofixPlan(fixtureWorkspace);
     expect(plan.markdown).toContain("## Discovered artifacts");
-  });
-
-  it("includes action plan section", () => {
-    const plan = buildWorkspaceAutofixPlan(fixtureWorkspace);
     expect(plan.markdown).toContain("## Action plan");
   });
 
-  it("includes LLM instructions", () => {
+  it("lists canonical artifacts and excludes noisy paths", () => {
     const plan = buildWorkspaceAutofixPlan(fixtureWorkspace);
-    expect(plan.markdown).toContain("## Instructions for the LLM");
-    expect(plan.markdown).toContain("agentlint_get_guidelines");
+
+    expect(plan.markdown).toContain("docs\\workflows\\deploy.md");
+    expect(plan.markdown).toContain("docs\\plans\\roadmap.md");
+    expect(plan.markdown).not.toContain(".agentlint-report.md");
+    expect(plan.markdown).not.toContain("README.md");
+    expect(plan.markdown).not.toContain("docs\\deploy-workflow.md");
+    expect(plan.markdown).not.toContain("examples\\sample\\AGENTS.md");
   });
 
-  it("includes guidelines references for discovered types", () => {
+  it("includes LLM instructions and guidelines references", () => {
     const plan = buildWorkspaceAutofixPlan(fixtureWorkspace);
+    expect(plan.markdown).toContain("## Instructions for the LLM");
     expect(plan.markdown).toContain("## Guidelines references");
+    expect(plan.markdown).toContain("agentlint_get_guidelines");
   });
 
   it("returns discovery result alongside markdown", () => {
     const plan = buildWorkspaceAutofixPlan(fixtureWorkspace);
-    expect(plan.discoveryResult).toBeTruthy();
-    expect(plan.discoveryResult.discovered.length).toBeGreaterThan(0);
+    expect(plan.discoveryResult.discovered.length).toBe(5);
+    expect(plan.discoveryResult.missing).toHaveLength(0);
     expect(plan.rootPath).toBe(fixtureWorkspace);
   });
 });

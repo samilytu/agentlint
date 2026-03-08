@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { createAgentLintMcpServer } from "../src/index.js";
 import {
   buildGuidelines,
@@ -10,6 +11,7 @@ import {
 const packageJson = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 ) as { version: string };
+const fixtureWorkspace = path.resolve(__dirname, "../../..", "fixtures", "workspace");
 
 describe("MCP tools - core function integration", () => {
   it("guidelines tool: builds markdown for each artifact type", () => {
@@ -52,10 +54,13 @@ describe("MCP tools - core function integration", () => {
     }
   });
 
-  it("plan-workspace-autofix tool: returns plan for current workspace", () => {
-    const plan = buildWorkspaceAutofixPlan(process.cwd());
+  it("plan-workspace-autofix tool: excludes noisy paths from discovery", () => {
+    const plan = buildWorkspaceAutofixPlan(fixtureWorkspace);
     expect(plan.markdown).toContain("# Workspace Autofix Plan");
     expect(plan.markdown).toContain("## Discovered artifacts");
+    expect(plan.markdown).toContain("docs\\workflows\\deploy.md");
+    expect(plan.markdown).not.toContain(".agentlint-report.md");
+    expect(plan.markdown).not.toContain("packages\\cli\\README.md");
   });
 });
 

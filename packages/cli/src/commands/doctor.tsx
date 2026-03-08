@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import fs from "node:fs";
 import path from "node:path";
-import { Box, render } from "ink";
+import { Box, render, useApp } from "ink";
 import { Spinner } from "@inkjs/ui";
 import { buildWorkspaceAutofixPlan } from "@agent-lint/core";
 import {
@@ -25,6 +25,9 @@ export type DoctorResult = {
   discovered: string[];
   missing: string[];
   markdown: string;
+  reportPath: string;
+  reportSaved: boolean;
+  reportError?: string;
 };
 
 export interface DoctorAppProps {
@@ -34,8 +37,14 @@ export interface DoctorAppProps {
   showBanner?: boolean;
 }
 
-function runDoctor(): DoctorResult {
-  const rootPath = process.cwd();
+type DoctorScanResult = Omit<DoctorResult, "reportPath" | "reportSaved" | "reportError">;
+
+function formatMissingArtifact(rootPath: string, suggestedPath: string, type: string): string {
+  const relativeSuggestedPath = path.relative(rootPath, suggestedPath) || suggestedPath;
+  return `${type} -> ${relativeSuggestedPath}`;
+}
+
+function buildDoctorScanResult(rootPath: string): DoctorScanResult {
   const plan = buildWorkspaceAutofixPlan(rootPath);
   const { discoveryResult } = plan;
 
@@ -45,12 +54,58 @@ function runDoctor(): DoctorResult {
     discovered: discoveryResult.discovered.map(
       (d) => `${d.relativePath} (${d.type})`,
     ),
-    missing: discoveryResult.missing.map((m) => String(m)),
+    missing: discoveryResult.missing.map((m) =>
+      formatMissingArtifact(rootPath, m.suggestedPath, m.type),
+    ),
     markdown: plan.markdown,
   };
 }
 
+function persistDoctorReport(rootPath: string, markdown: string): {
+  reportPath: string;
+  reportSaved: boolean;
+  reportError?: string;
+} {
+  const reportPath = path.join(rootPath, REPORT_FILENAME);
+
+  try {
+    fs.writeFileSync(reportPath, markdown, "utf-8");
+
+    const stats = fs.statSync(reportPath);
+    const content = fs.readFileSync(reportPath, "utf-8");
+    if (!stats.isFile() || content.trim().length === 0) {
+      return {
+        reportPath,
+        reportSaved: false,
+        reportError: "Report file verification failed after write.",
+      };
+    }
+
+    return {
+      reportPath,
+      reportSaved: true,
+    };
+  } catch (error) {
+    return {
+      reportPath,
+      reportSaved: false,
+      reportError: error instanceof Error ? error.message : "Unknown report write error.",
+    };
+  }
+}
+
+function runDoctor(rootPath: string = process.cwd()): DoctorResult {
+  const scanResult = buildDoctorScanResult(rootPath);
+  const persistence = persistDoctorReport(rootPath, scanResult.markdown);
+
+  return {
+    ...scanResult,
+    ...persistence,
+  };
+}
+
 export function DoctorApp({ onComplete, showBanner = true }: DoctorAppProps): React.ReactNode {
+  const { exit } = useApp();
   const [phase, setPhase] = useState<"scanning" | "done">("scanning");
   const [result, setResult] = useState<DoctorResult | null>(null);
 
@@ -58,14 +113,20 @@ export function DoctorApp({ onComplete, showBanner = true }: DoctorAppProps): Re
     const id = setImmediate(() => {
       const r = runDoctor();
 
-      const reportPath = path.join(process.cwd(), REPORT_FILENAME);
-      fs.writeFileSync(reportPath, r.markdown, "utf-8");
-
       setResult(r);
       setPhase("done");
     });
     return () => clearImmediate(id);
   }, []);
+
+  useEffect(() => {
+    if (phase !== "done" || onComplete) {
+      return;
+    }
+
+    const id = setTimeout(() => exit(), 500);
+    return () => clearTimeout(id);
+  }, [exit, onComplete, phase]);
 
   return (
     <Box flexDirection="column">
@@ -117,11 +178,22 @@ export function DoctorApp({ onComplete, showBanner = true }: DoctorAppProps): Re
             </>
           )}
 
-          <SectionTitle>Report saved</SectionTitle>
-          <InfoItem>{REPORT_FILENAME}</InfoItem>
+          {result.reportSaved ? (
+            <>
+              <SectionTitle>Report saved</SectionTitle>
+              <InfoItem>{path.relative(process.cwd(), result.reportPath) || REPORT_FILENAME}</InfoItem>
+            </>
+          ) : (
+            <>
+              <SectionTitle>Report not saved</SectionTitle>
+              <ErrorItem>{result.reportError ?? "Unknown report write error."}</ErrorItem>
+            </>
+          )}
 
           <NextStep>
-            {`Run ${"agent-lint prompt"} to get a ready-to-paste prompt for your IDE.`}
+            {result.reportSaved
+              ? `Run ${"agent-lint prompt"} to get a ready-to-paste prompt for your IDE.`
+              : `Fix the report write issue and run ${"agent-lint doctor"} again.`}
           </NextStep>
 
           {onComplete && (
@@ -139,15 +211,16 @@ export function runDoctorCommand(options: {
   stdout?: boolean;
   json?: boolean;
 }): void {
+  const rootPath = process.cwd();
+
   if (options.json) {
-    const rootPath = process.cwd();
     const plan = buildWorkspaceAutofixPlan(rootPath);
     process.stdout.write(JSON.stringify(plan.discoveryResult, null, 2) + "\n");
     return;
   }
 
   if (options.stdout) {
-    const result = runDoctor();
+    const result = buildDoctorScanResult(rootPath);
     process.stdout.write(result.markdown + "\n");
     return;
   }

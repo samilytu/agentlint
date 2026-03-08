@@ -4,7 +4,7 @@ import { Banner, Divider } from "./ui/components.js";
 import { MainMenu, type MenuCommand } from "./ui/main-menu.js";
 import { NextAction, type NextActionContext, type NextActionChoice } from "./ui/next-action.js";
 import { InitWizard, type ClientInstallResult } from "./commands/init.js";
-import { DoctorApp } from "./commands/doctor.js";
+import { DoctorApp, type DoctorResult } from "./commands/doctor.js";
 import { PromptApp, type PromptResult } from "./commands/prompt.js";
 
 // ── State Machine ──────────────────────────────────────────────────────
@@ -53,14 +53,13 @@ export function App(): React.ReactNode {
     });
   }, [hasReport]);
 
-  const handleDoctorComplete = useCallback(() => {
-    // Doctor always creates a report
-    setHasReport(true);
+  const handleDoctorComplete = useCallback((result: DoctorResult) => {
+    setHasReport(result.reportSaved);
     setScreen({
       type: "next-action",
       context: {
         completedCommand: "doctor",
-        hasReport: true,
+        hasReport: result.reportSaved,
       },
     });
   }, []);

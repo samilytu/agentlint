@@ -5,8 +5,6 @@ import { SectionTitle } from "./components.js";
 import { colors } from "./theme.js";
 import type { MenuCommand } from "./main-menu.js";
 
-// ── Types ──────────────────────────────────────────────────────────────
-
 export type NextActionChoice = MenuCommand | "menu";
 
 export interface NextActionContext {
@@ -23,8 +21,6 @@ export interface NextActionProps {
   onSelect: (choice: NextActionChoice) => void;
 }
 
-// ── Smart Suggestion Logic (exported for testing) ───────────────────────
-
 interface ActionOption {
   label: string;
   value: NextActionChoice;
@@ -37,29 +33,29 @@ export function buildNextActions(context: NextActionContext): ActionOption[] {
   switch (completedCommand) {
     case "init":
       if (initCreatedConfigs) {
-        // New configs created — prompt is the natural next step
         options.push({ label: "Get IDE prompt (recommended)", value: "prompt" });
         options.push({ label: "Scan workspace (doctor)", value: "doctor" });
       } else {
-        // All configs already existed — scan workspace instead
         options.push({ label: "Scan workspace (recommended)", value: "doctor" });
         options.push({ label: "Get IDE prompt (prompt)", value: "prompt" });
       }
       break;
 
     case "doctor":
-      // Report just generated — prompt to use it
-      options.push({ label: "Get IDE prompt (recommended)", value: "prompt" });
-      options.push({ label: "Set up MCP config (init)", value: "init" });
+      if (hasReport === false) {
+        options.push({ label: "Scan workspace again (recommended)", value: "doctor" });
+        options.push({ label: "Get IDE prompt (prompt)", value: "prompt" });
+      } else {
+        options.push({ label: "Get IDE prompt (recommended)", value: "prompt" });
+        options.push({ label: "Set up MCP config (init)", value: "init" });
+      }
       break;
 
     case "prompt":
       if (!hasReport) {
-        // No report yet — suggest doctor for better results
         options.push({ label: "Scan workspace (recommended)", value: "doctor" });
         options.push({ label: "Set up MCP config (init)", value: "init" });
       } else {
-        // Prompt copied and report exists — workflow complete
         options.push({ label: "Scan workspace (doctor)", value: "doctor" });
         options.push({ label: "Set up MCP config (init)", value: "init" });
       }
@@ -72,14 +68,11 @@ export function buildNextActions(context: NextActionContext): ActionOption[] {
       break;
   }
 
-  // Always add navigation options at the end
   options.push({ label: "Back to menu", value: "menu" });
   options.push({ label: "Exit", value: "exit" });
 
   return options;
 }
-
-// ── Component ───────────────────────────────────────────────────────────
 
 export function NextAction({ context, onSelect }: NextActionProps): React.ReactNode {
   const options = buildNextActions(context);

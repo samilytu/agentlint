@@ -12,8 +12,12 @@ export type { PromptPack } from "./types.js";
 export { qualityMetricIds, getMetricGuidanceList, getMetricGuidance } from "./conventions/scoring.js";
 export type { QualityMetricId, MetricGuidance } from "./conventions/scoring.js";
 
-export { getArtifactPathHints, buildArtifactPathHintsMarkdown } from "./conventions/path-hints.js";
-export type { ArtifactPathHint } from "./conventions/path-hints.js";
+export {
+  getArtifactPathHints,
+  getArtifactDiscoveryPatterns,
+  buildArtifactPathHintsMarkdown,
+} from "./conventions/path-hints.js";
+export type { ArtifactPathHint, ArtifactDiscoveryTier } from "./conventions/path-hints.js";
 
 export { buildArtifactSpecMarkdown } from "./conventions/specs.js";
 
