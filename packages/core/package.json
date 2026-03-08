@@ -17,9 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@agent-lint/shared": "workspace:*",
-    "diff": "^8.0.3",
-    "gray-matter": "^4.0.3"
+    "@agent-lint/shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

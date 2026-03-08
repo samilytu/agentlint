@@ -201,39 +201,6 @@ export function PromptBox({ children }: { children: string }): React.ReactNode {
   );
 }
 
-export function Badge({
-  label,
-  color,
-}: {
-  label: string;
-  color: string;
-}): React.ReactNode {
-  return (
-    <Text color={color} bold>
-      {`[${label}]`}
-    </Text>
-  );
-}
-
-export function StatBox({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  color?: string;
-}): React.ReactNode {
-  return (
-    <Box gap={1}>
-      <Text color={colors.dim}>{label}</Text>
-      <Text color={color ?? colors.primary} bold>
-        {String(value)}
-      </Text>
-    </Box>
-  );
-}
-
 export function StatusBar({
   items,
 }: {

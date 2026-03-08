@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import fs from "node:fs";
 import path from "node:path";
-import { Box, Text, render } from "ink";
+import { Box, render } from "ink";
 import { Spinner } from "@inkjs/ui";
 import { buildWorkspaceAutofixPlan } from "@agent-lint/core";
 import {

@@ -1,11 +1,10 @@
 import React, { useState, useCallback } from "react";
-import { Box, Text, useApp } from "ink";
+import { Box, useApp } from "ink";
 import { Banner, Divider } from "./ui/components.js";
-import { colors } from "./ui/theme.js";
 import { MainMenu, type MenuCommand } from "./ui/main-menu.js";
 import { NextAction, type NextActionContext, type NextActionChoice } from "./ui/next-action.js";
 import { InitWizard, type ClientInstallResult } from "./commands/init.js";
-import { DoctorApp, type DoctorResult } from "./commands/doctor.js";
+import { DoctorApp } from "./commands/doctor.js";
 import { PromptApp, type PromptResult } from "./commands/prompt.js";
 
 // ── State Machine ──────────────────────────────────────────────────────
@@ -54,7 +53,7 @@ export function App(): React.ReactNode {
     });
   }, [hasReport]);
 
-  const handleDoctorComplete = useCallback((result: DoctorResult) => {
+  const handleDoctorComplete = useCallback(() => {
     // Doctor always creates a report
     setHasReport(true);
     setScreen({
