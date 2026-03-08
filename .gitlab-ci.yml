@@ -35,6 +35,7 @@ test:
     - (cd packages/mcp && npm pack --dry-run)
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "web"
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_TAG =~ /^(cli|mcp)-v/
 
