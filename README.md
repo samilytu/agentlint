@@ -110,7 +110,7 @@ For exact formats and scope support, see:
 - GitLab CI is the authoritative publish path for npm releases and provenance.
 - Release tags are package-scoped: `cli-vX.Y.Z` and `mcp-vX.Y.Z`.
 - Contributors add Changesets in feature and fix PRs; GitLab prepares a single release MR from those pending changes.
-- Merging the release MR creates tags automatically, publishes from the protected `production` environment, and mirrors those tags back to GitHub.
+- Merging the release MR creates tags automatically, waits for a maintainer-triggered publish job on the tag pipeline, and mirrors those tags back to GitHub after publish.
 
 ## Contributing
 

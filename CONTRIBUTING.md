@@ -108,7 +108,7 @@ For a new MCP tool or resource:
 4. GitLab verifies the changeset requirement and package dry-runs.
 5. After merge, GitLab opens or updates the `release/next` merge request.
 6. Merge the release MR after reviewing the generated version and changelog changes.
-7. GitLab creates package-scoped tags, waits for protected `production` publish approval, publishes to npm, and mirrors the same tags to GitHub.
+7. GitLab creates package-scoped tags, waits for a maintainer to start the publish job from the tag pipeline, publishes to npm, and mirrors the same tags to GitHub.
 
 ## Issues and Discussions
 

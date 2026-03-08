@@ -15,7 +15,7 @@ GitHub stays public-facing for docs and issues. GitLab CI is the only system tha
 4. GitLab creates or updates a single `release/next` merge request with generated version and changelog changes.
 5. Review and merge that release MR.
 6. GitLab tags each changed package as `cli-vX.Y.Z` or `mcp-vX.Y.Z`.
-7. GitLab publish jobs deploy from the protected `production` environment.
+7. A maintainer starts the publish job from the tag pipeline.
 8. After a successful npm publish, GitLab mirrors the same package tag to GitHub.
 
 Manual version edits and manual tag creation are no longer the normal path.
@@ -54,13 +54,17 @@ Configure these GitLab CI/CD variables:
   - defaults to `samilytu/agentlint`
 - `NPM_TOKEN`
   - temporary fallback only while trusted publishing is being proven
-  - remove it after trusted publishing succeeds consistently from `production`
+  - remove it after trusted publishing succeeds consistently
 
-## Protected Publish Environment
+## Free Tier Publish Gate
 
-Create a GitLab protected environment named `production` and allow only the release maintainers to deploy to it.
+GitLab protected environments are a Premium feature. On GitLab Free, the publish gate is the manual `publish-cli` or `publish-mcp` job on each release tag pipeline.
 
-The `publish-cli` and `publish-mcp` jobs target that environment. This is the approval gate for npm publish.
+Recommended repository protection on GitLab Free:
+
+- protect the `main` branch
+- protect the `cli-v*` and `mcp-v*` tag patterns
+- keep `GITLAB_RELEASE_TOKEN`, `GITHUB_MIRROR_TOKEN`, and temporary `NPM_TOKEN` as masked project variables
 
 ## npm Trusted Publishing
 
@@ -75,7 +79,7 @@ Use these settings:
 - Namespace: `bsamilozturk`
 - Project: `agentlint`
 - CI config path: `.gitlab-ci.yml`
-- Environment name: `production`
+- Environment name: leave blank
 
 Current CI auth behavior:
 
@@ -98,5 +102,5 @@ Current CI auth behavior:
 - enforce changesets on merge requests that affect published package outputs
 - prepare and maintain the single `release/next` release MR
 - create package-scoped release tags after the release MR merges
-- publish to npm from the protected `production` environment
+- wait for a maintainer to start the publish job from the tag pipeline
 - mirror successful release tags to GitHub
