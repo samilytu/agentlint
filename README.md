@@ -109,6 +109,8 @@ For exact formats and scope support, see:
 - GitHub is the canonical public home for docs, issues, and release discovery.
 - GitLab CI is the authoritative publish path for npm releases and provenance.
 - Release tags are package-scoped: `cli-vX.Y.Z` and `mcp-vX.Y.Z`.
+- Contributors add Changesets in feature and fix PRs; GitLab prepares a single release MR from those pending changes.
+- Merging the release MR creates tags automatically, publishes from the protected `production` environment, and mirrors those tags back to GitHub.
 
 ## Contributing
 

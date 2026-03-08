@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "build": "pnpm --filter @agent-lint/shared run build && pnpm --filter @agent-lint/core run build && pnpm --filter @agent-lint/mcp run build && pnpm --filter @agent-lint/cli run build && tsc --build --force",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release-status": "changeset status --verbose",
     "typecheck": "tsc --build",
     "typecheck:shared": "tsc --noEmit --project packages/shared/tsconfig.json",
     "typecheck:core": "tsc --noEmit --project packages/core/tsconfig.json",
@@ -17,6 +20,7 @@
     "lint": "eslint"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.7",
     "@modelcontextprotocol/inspector": "^0.20.0",
     "@types/node": "^20",
     "@vitest/coverage-v8": "^4.0.18",

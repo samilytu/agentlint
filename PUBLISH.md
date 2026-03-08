@@ -1,102 +1,102 @@
 # Publishing Agent Lint
 
-Agent Lint uses independent package versioning:
+Agent Lint publishes two independently versioned packages:
 
 - `@agent-lint/cli`
 - `@agent-lint/mcp`
 
-GitHub is the public home for discovery. GitLab CI is the authoritative release and npm publish path.
+GitHub stays public-facing for docs and issues. GitLab CI is the only system that versions, tags, publishes, and mirrors releases.
 
-## Release Rules
+## Release Flow
 
-- Tags are package-scoped: `cli-vX.Y.Z` and `mcp-vX.Y.Z`
-- The tag must match the target package version exactly
-- Update package-level release notes before tagging
-- Run `npm pack --dry-run` before every release
+1. Ship code changes in a normal merge request.
+2. Add a changeset with `pnpm changeset` if the change affects a published package.
+3. Merge to `main`.
+4. GitLab creates or updates a single `release/next` merge request with generated version and changelog changes.
+5. Review and merge that release MR.
+6. GitLab tags each changed package as `cli-vX.Y.Z` or `mcp-vX.Y.Z`.
+7. GitLab publish jobs deploy from the protected `production` environment.
+8. After a successful npm publish, GitLab mirrors the same package tag to GitHub.
 
-## Pre-Release Checklist
+Manual version edits and manual tag creation are no longer the normal path.
+
+## Local Verification
+
+Before opening a merge request:
 
 ```bash
 pnpm install
 pnpm run build
+pnpm run release-status
 pnpm run typecheck
 pnpm run lint
 pnpm run test
 ```
 
-Dry-run both published packages:
+If you change package metadata or release logic, also verify tarballs:
 
 ```bash
 cd packages/cli && npm pack --dry-run
 cd ../mcp && npm pack --dry-run
 ```
 
-Check:
+## GitLab Variables and Secrets
 
-- `dist/` is included
-- `README.md` is included
-- `CHANGELOG.md` is included
-- no source or test files leak into the tarball
+Configure these GitLab CI/CD variables:
 
-## Releasing `@agent-lint/cli`
+- `GITLAB_RELEASE_TOKEN`
+  - dedicated project access token
+  - minimum scope needed to push `release/next`, create tags, and open or update merge requests
+- `GITHUB_MIRROR_TOKEN`
+  - fine-grained GitHub token with tag push access to `samilytu/agentlint`
+- `GITHUB_MIRROR_REPOSITORY`
+  - optional override for the GitHub mirror target
+  - defaults to `samilytu/agentlint`
+- `NPM_TOKEN`
+  - temporary fallback only while trusted publishing is being proven
+  - remove it after trusted publishing succeeds consistently from `production`
 
-1. Update `packages/cli/package.json`
-2. Update [packages/cli/CHANGELOG.md](packages/cli/CHANGELOG.md)
-3. Update [CHANGELOG.md](CHANGELOG.md) if the workspace-level story changed
-4. Commit the release change
-5. Create tag `cli-vX.Y.Z`
-6. Push the tag to the GitLab authoritative remote
-7. Mirror the same tag to the GitHub public remote
+## Protected Publish Environment
 
-## Releasing `@agent-lint/mcp`
+Create a GitLab protected environment named `production` and allow only the release maintainers to deploy to it.
 
-1. Update `packages/mcp/package.json`
-2. Update [packages/mcp/CHANGELOG.md](packages/mcp/CHANGELOG.md)
-3. Update [CHANGELOG.md](CHANGELOG.md) if the workspace-level story changed
-4. Commit the release change
-5. Create tag `mcp-vX.Y.Z`
-6. Push the tag to the GitLab authoritative remote
-7. Mirror the same tag to the GitHub public remote
+The `publish-cli` and `publish-mcp` jobs target that environment. This is the approval gate for npm publish.
 
-## CI Responsibilities
+## npm Trusted Publishing
+
+Trusted publishing is configured per npm package. Add a trusted publisher entry for each of:
+
+- `@agent-lint/cli`
+- `@agent-lint/mcp`
+
+Use these settings:
+
+- Provider: `GitLab`
+- Namespace: `bsamilozturk`
+- Project: `agentlint`
+- CI config path: `.gitlab-ci.yml`
+- Environment name: `production`
+
+Current CI auth behavior:
+
+- if `NPM_TOKEN` is present, GitLab can still publish with token-based auth
+- if `NPM_TOKEN` is missing, GitLab uses npm trusted publishing and provenance
+- token-based jobs support both plain and file-type `NPM_TOKEN`
+- publish jobs exit cleanly if the exact version is already on npm
+
+## GitHub and GitLab Responsibilities
 
 ### GitHub Actions
 
 - verify-only
-- runs install, build, typecheck, lint, test, and pack dry-runs
-- validates package-scoped tags
-- does not publish to npm
+- install, build, typecheck, lint, test, and pack dry-runs
+- validate package-scoped tags after they are mirrored back from GitLab
+- never publish to npm
 
 ### GitLab CI
 
-- authoritative publish path
-- validates that the pushed tag matches the target package version
-- publishes only the tagged package
-- uses provenance-enabled npm publishing
-
-## npm Metadata Policy
-
-- `repository` points to GitLab because that is the authoritative publish source
-- `homepage` points to GitHub because that is the public landing page
-- `bugs` points to GitHub Issues
-
-## Manual npm Auth
-
-If you publish outside OIDC trusted publishing, use a granular npm token with write access to `@agent-lint/*` and store it as `NPM_TOKEN` in GitLab CI/CD variables.
-
-Recommended GitLab setup:
-
-1. Open `Settings > CI/CD > Variables`
-2. Add variable `NPM_TOKEN`
-3. Paste a granular npm token with publish rights for `@agent-lint/cli` and `@agent-lint/mcp`
-4. Mark it `Masked`
-5. Mark it `Protected` only if your release tags are protected too
-6. Retry the failed `publish-cli` or `publish-mcp` job from the tag pipeline
-
-Current behavior:
-
-- if `NPM_TOKEN` is present, GitLab CI publishes with token-based auth
-- both plain variables and file-type variables are supported
-- token-based jobs run `npm whoami` before publish so auth failures fail fast
-- if `NPM_TOKEN` is missing, GitLab CI attempts npm trusted publishing with provenance
-- if npm trusted publishing is not configured on npm, the job will fail and the log will point you back to `NPM_TOKEN`
+- enforce changesets on merge requests that affect published package outputs
+- prepare and maintain the single `release/next` release MR
+- create package-scoped release tags after the release MR merges
+- publish to npm from the protected `production` environment
+- mirror successful release tags to GitHub

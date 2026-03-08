@@ -21,6 +21,7 @@ pnpm install
 
 ```bash
 pnpm run build
+pnpm run release-status
 pnpm run typecheck
 pnpm run lint
 pnpm run test
@@ -62,6 +63,7 @@ Dependency flow:
 - Any change to MCP tools or resources must update the public READMEs and the docs consistency tests.
 - Package versions, changelogs, tags, and publish workflows must stay aligned.
 - GitHub is the public home. GitLab CI is the authoritative publish path. Do not reintroduce dual publish automation.
+- Package versions and package changelogs are generated from Changesets through the GitLab release MR flow. Do not edit release versions by hand.
 
 ## Commit and PR Style
 
@@ -76,6 +78,14 @@ chore(release): prepare cli-v0.4.1
 
 Good PRs make the behavioral change and the public docs change in the same branch.
 
+If the change can affect either published package, also add a changeset:
+
+```bash
+pnpm changeset
+```
+
+Changesets are required for changes under `packages/cli`, `packages/mcp`, `packages/shared`, or `packages/core` when they affect published package outputs. They are not required for docs-only, CI-only, or repo-maintenance changes that do not affect npm packages.
+
 ## Adding or Changing Product Surface
 
 For a new CLI feature:
@@ -89,6 +99,16 @@ For a new MCP tool or resource:
 1. Update the runtime registration and tests.
 2. Update the MCP README and any root README references.
 3. Keep docs consistency tests green.
+
+## Release Workflow
+
+1. Make the code change and update tests/docs.
+2. Run `pnpm changeset` if the change affects a published package.
+3. Open a merge request to `main`.
+4. GitLab verifies the changeset requirement and package dry-runs.
+5. After merge, GitLab opens or updates the `release/next` merge request.
+6. Merge the release MR after reviewing the generated version and changelog changes.
+7. GitLab creates package-scoped tags, waits for protected `production` publish approval, publishes to npm, and mirrors the same tags to GitHub.
 
 ## Issues and Discussions
 

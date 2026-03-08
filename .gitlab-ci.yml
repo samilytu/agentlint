@@ -1,9 +1,22 @@
 stages:
   - test
+  - release
   - publish
+  - mirror
 
 variables:
+  GIT_DEPTH: "0"
   PNPM_VERSION: "10"
+
+changeset-required:
+  stage: test
+  image: node:24
+  before_script:
+    - git fetch origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+  script:
+    - node scripts/check-changeset.mjs
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 test:
   stage: test
@@ -14,6 +27,7 @@ test:
     - pnpm install --frozen-lockfile
   script:
     - pnpm run build
+    - pnpm run release-status
     - pnpm run typecheck
     - pnpm run lint
     - pnpm run test
@@ -24,10 +38,34 @@ test:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_TAG =~ /^(cli|mcp)-v/
 
+prepare-release:
+  stage: release
+  image: node:24
+  needs: ["test"]
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@${PNPM_VERSION} --activate
+    - pnpm install --frozen-lockfile
+  script:
+    - node scripts/prepare-release.mjs
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+
+tag-release:
+  stage: release
+  image: node:24
+  needs: ["test", "prepare-release"]
+  script:
+    - node scripts/tag-release.mjs
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+
 publish-mcp:
   stage: publish
   needs: ["test"]
   image: node:24
+  environment:
+    name: production
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
@@ -38,6 +76,7 @@ publish-mcp:
     - corepack prepare pnpm@${PNPM_VERSION} --activate
     - pnpm install --frozen-lockfile
     - pnpm run build
+    - pnpm run release-status
     - pnpm run typecheck
     - pnpm run lint
     - pnpm run test
@@ -46,25 +85,7 @@ publish-mcp:
       VERSION=$(node -p 'require("./packages/mcp/package.json").version')
       test "$CI_COMMIT_TAG" = "mcp-v$VERSION"
     - npm install -g npm@latest
-    - |
-      if [ -n "$NPM_TOKEN" ]; then
-        if [ -f "$NPM_TOKEN" ]; then
-          NODE_AUTH_TOKEN="$(tr -d '\r\n' < "$NPM_TOKEN")"
-        else
-          NODE_AUTH_TOKEN="$NPM_TOKEN"
-        fi
-        export NODE_AUTH_TOKEN
-        printf '//registry.npmjs.org/:_authToken=%s\nregistry=https://registry.npmjs.org/\nalways-auth=true\n' "$NODE_AUTH_TOKEN" > ~/.npmrc
-        npm whoami
-        PUBLISH_FLAGS="--access public"
-      else
-        echo "NPM_TOKEN is not set. Falling back to npm trusted publishing via GitLab OIDC." >&2
-        echo "If npm trusted publishing is not configured for @agent-lint/mcp, add a GitLab CI/CD variable named NPM_TOKEN or disable Protected if your release tags are unprotected." >&2
-        PUBLISH_FLAGS="--access public --provenance"
-      fi
-    - cd packages/mcp
-    - npm pack --dry-run
-    - npm publish $PUBLISH_FLAGS
+    - sh scripts/publish-package.sh packages/mcp "mcp-v$VERSION"
   rules:
     - if: $CI_COMMIT_TAG =~ /^mcp-v/
 
@@ -72,6 +93,8 @@ publish-cli:
   stage: publish
   needs: ["test"]
   image: node:24
+  environment:
+    name: production
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
@@ -82,6 +105,7 @@ publish-cli:
     - corepack prepare pnpm@${PNPM_VERSION} --activate
     - pnpm install --frozen-lockfile
     - pnpm run build
+    - pnpm run release-status
     - pnpm run typecheck
     - pnpm run lint
     - pnpm run test
@@ -90,24 +114,24 @@ publish-cli:
       VERSION=$(node -p 'require("./packages/cli/package.json").version')
       test "$CI_COMMIT_TAG" = "cli-v$VERSION"
     - npm install -g npm@latest
-    - |
-      if [ -n "$NPM_TOKEN" ]; then
-        if [ -f "$NPM_TOKEN" ]; then
-          NODE_AUTH_TOKEN="$(tr -d '\r\n' < "$NPM_TOKEN")"
-        else
-          NODE_AUTH_TOKEN="$NPM_TOKEN"
-        fi
-        export NODE_AUTH_TOKEN
-        printf '//registry.npmjs.org/:_authToken=%s\nregistry=https://registry.npmjs.org/\nalways-auth=true\n' "$NODE_AUTH_TOKEN" > ~/.npmrc
-        npm whoami
-        PUBLISH_FLAGS="--access public"
-      else
-        echo "NPM_TOKEN is not set. Falling back to npm trusted publishing via GitLab OIDC." >&2
-        echo "If npm trusted publishing is not configured for @agent-lint/cli, add a GitLab CI/CD variable named NPM_TOKEN or disable Protected if your release tags are unprotected." >&2
-        PUBLISH_FLAGS="--access public --provenance"
-      fi
-    - cd packages/cli
-    - npm pack --dry-run
-    - npm publish $PUBLISH_FLAGS
+    - sh scripts/publish-package.sh packages/cli "cli-v$VERSION"
   rules:
     - if: $CI_COMMIT_TAG =~ /^cli-v/
+
+mirror-cli-tag:
+  stage: mirror
+  needs: ["publish-cli"]
+  image: node:24
+  script:
+    - node scripts/mirror-tag.mjs
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^cli-v/
+
+mirror-mcp-tag:
+  stage: mirror
+  needs: ["publish-mcp"]
+  image: node:24
+  script:
+    - node scripts/mirror-tag.mjs
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^mcp-v/
