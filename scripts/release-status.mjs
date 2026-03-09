@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import process from "node:process";
 import { execPnpm } from "./lib/pnpm-runner.mjs";
+import { getReleaseStatusSkipReason } from "./lib/release-status-context.mjs";
 
 function run(command, args, options = {}) {
   const result = execFileSync(command, args, {
@@ -31,6 +32,12 @@ function resolveSinceRef() {
 }
 
 function main() {
+  const skipReason = getReleaseStatusSkipReason();
+  if (skipReason) {
+    process.stderr.write(`${skipReason}\n`);
+    return;
+  }
+
   const sinceRef = resolveSinceRef();
   const args = ["exec", "changeset", "status", "--verbose"];
 
