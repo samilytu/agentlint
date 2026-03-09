@@ -1,6 +1,6 @@
 {
   "name": "@agent-lint/cli",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "type": "module",
   "license": "MIT",
   "description": "CLI for keeping AGENTS.md, rules, and skills structured, current, and codebase-aware.",

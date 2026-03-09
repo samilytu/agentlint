@@ -1,6 +1,6 @@
 {
   "name": "@agent-lint/mcp",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "type": "module",
   "license": "MIT",
   "description": "Read-only MCP server for keeping AGENTS.md, rules, and skills structured, current, and codebase-aware.",
