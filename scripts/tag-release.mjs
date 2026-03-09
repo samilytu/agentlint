@@ -38,6 +38,19 @@ function remoteTagExists(tagName) {
   return output.length > 0;
 }
 
+function configureGitIdentity() {
+  git([
+    "config",
+    "user.name",
+    process.env.RELEASE_BOT_NAME ?? "agent-lint release bot",
+  ]);
+  git([
+    "config",
+    "user.email",
+    process.env.RELEASE_BOT_EMAIL ?? "release-bot@users.noreply.gitlab.com",
+  ]);
+}
+
 function main() {
   if (process.env.CI_COMMIT_BRANCH && process.env.CI_COMMIT_BRANCH !== "main") {
     process.stderr.write("tag-release only runs on main.\n");
@@ -80,6 +93,7 @@ function main() {
   }
 
   const remote = releaseRemote(token);
+  configureGitIdentity();
 
   for (const tag of tagsToCreate) {
     if (remoteTagExists(tag.tagName)) {
