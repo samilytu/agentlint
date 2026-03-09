@@ -25,6 +25,7 @@ jobs:
           cache: pnpm
 
       - run: corepack enable
+      - run: corepack prepare pnpm@10.30.3 --activate
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
       - run: pnpm run typecheck
@@ -42,6 +43,7 @@ jobs:
           cache: pnpm
 
       - run: corepack enable
+      - run: corepack prepare pnpm@10.30.3 --activate
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
       - run: pnpm run lint
