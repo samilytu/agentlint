@@ -24,7 +24,12 @@ function resolveSinceRef() {
     process.env.CI_DEFAULT_BRANCH;
 
   if (!targetBranch) {
-    return null;
+    try {
+      run("git", ["fetch", "origin", "main"], { stdio: "inherit" });
+      return "origin/main";
+    } catch {
+      return null;
+    }
   }
 
   const remoteRef = `origin/${targetBranch}`;
