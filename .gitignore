@@ -32,6 +32,24 @@ bun.lockb
 .mcp.json
 opencode.json
 
+!.cursor/
+.cursor/*
+!.cursor/rules/
+.cursor/rules/*
+!.cursor/rules/agentlint-maintenance.mdc
+
+!.windsurf/
+.windsurf/*
+!.windsurf/rules/
+.windsurf/rules/*
+!.windsurf/rules/agentlint-maintenance.md
+
+!.codex/
+.codex/*
+!.codex/rules/
+.codex/rules/*
+!.codex/rules/default.rules
+
 # generated report
 .agentlint-report.md
 

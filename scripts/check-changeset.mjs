@@ -1,20 +1,10 @@
 import { execFileSync } from "node:child_process";
 import process from "node:process";
-
-const PACKAGE_PREFIXES = [
-  "packages/cli/",
-  "packages/mcp/",
-  "packages/shared/",
-  "packages/core/",
-];
-
-const RELEASE_ARTIFACT_FILES = new Set([
-  "CHANGELOG.md",
-  "packages/cli/CHANGELOG.md",
-  "packages/cli/package.json",
-  "packages/mcp/CHANGELOG.md",
-  "packages/mcp/package.json",
-]);
+import {
+  getImpactfulFiles,
+  isChangesetFile,
+  isReleaseArtifactOnly,
+} from "./lib/changeset-impact.mjs";
 
 function git(args, options = {}) {
   return execFileSync("git", args, {
@@ -70,40 +60,6 @@ function listChangedFiles(baseRef) {
   return output ? output.split(/\r?\n/).filter(Boolean) : [];
 }
 
-function isChangesetFile(file) {
-  return (
-    file.startsWith(".changeset/") &&
-    file.endsWith(".md") &&
-    file !== ".changeset/README.md"
-  );
-}
-
-function isReleaseArtifactOnly(file) {
-  return RELEASE_ARTIFACT_FILES.has(file) || isChangesetFile(file);
-}
-
-function isPackageTestFile(file) {
-  return (
-    file.includes("/tests/") ||
-    file.endsWith(".test.ts") ||
-    file.endsWith(".test.tsx") ||
-    file.endsWith(".spec.ts") ||
-    file.endsWith(".spec.tsx")
-  );
-}
-
-function affectsPublishedPackage(file) {
-  if (!PACKAGE_PREFIXES.some((prefix) => file.startsWith(prefix))) {
-    return false;
-  }
-
-  if (isReleaseArtifactOnly(file) || isPackageTestFile(file)) {
-    return false;
-  }
-
-  return true;
-}
-
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const baseRef = resolveBaseRef(args);
@@ -123,7 +79,7 @@ function main() {
     return;
   }
 
-  const impactfulFiles = changedFiles.filter(affectsPublishedPackage);
+  const impactfulFiles = getImpactfulFiles(changedFiles);
   if (impactfulFiles.length === 0) {
     process.stderr.write(
       "No published-package changes detected. Changeset requirement skipped.\n",

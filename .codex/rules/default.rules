@@ -1,0 +1,174 @@
+# Agent Lint project rules for Codex outside-sandbox execution.
+# Keep local verification easy; require review for remote or destructive actions.
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "Pushing changes mutates remote state. Review the remote, branch, and target before continuing.",
+    match = [
+        "git push origin main",
+        "git push origin codex/context-refresh",
+    ],
+    not_match = [
+        "git pull origin main",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "push", "--force"],
+    decision = "forbidden",
+    justification = "Do not rewrite remote history from Codex. Use a normal push or handle history rewrites manually.",
+    match = [
+        "git push --force origin main",
+    ],
+    not_match = [
+        "git push origin main",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "push", "--force-with-lease"],
+    decision = "forbidden",
+    justification = "Do not rewrite remote history from Codex. Use a normal push or perform the rewrite manually.",
+    match = [
+        "git push --force-with-lease origin main",
+    ],
+    not_match = [
+        "git push origin main",
+    ],
+)
+
+prefix_rule(
+    pattern = ["npm", "publish"],
+    decision = "prompt",
+    justification = "Publishing to npm is an external side effect. Verify package, version, and provenance state first.",
+    match = [
+        "npm publish --access public --provenance",
+    ],
+    not_match = [
+        "npm pack --dry-run",
+    ],
+)
+
+prefix_rule(
+    pattern = ["pnpm", "publish"],
+    decision = "prompt",
+    justification = "Publishing to npm is an external side effect. Verify package, version, and provenance state first.",
+    match = [
+        "pnpm publish --access public",
+    ],
+    not_match = [
+        "pnpm run build",
+    ],
+)
+
+prefix_rule(
+    pattern = ["pnpm", "version-packages"],
+    decision = "prompt",
+    justification = "Versioning packages rewrites release metadata. Review the affected package scope before continuing.",
+    match = [
+        "pnpm version-packages",
+    ],
+    not_match = [
+        "pnpm changeset",
+    ],
+)
+
+prefix_rule(
+    pattern = ["node", ["scripts/prepare-release.mjs", "scripts/tag-release.mjs", "scripts/mirror-tag.mjs", "scripts/mirror-branch.mjs"]],
+    decision = "prompt",
+    justification = "Release and mirror scripts change version metadata, tags, or remote state. Review the target package and branch first.",
+    match = [
+        "node scripts/prepare-release.mjs",
+        "node scripts/tag-release.mjs",
+        "node scripts/mirror-tag.mjs",
+    ],
+    not_match = [
+        "node scripts/release-status.mjs",
+    ],
+)
+
+prefix_rule(
+    pattern = ["bash", "scripts/publish-package.sh"],
+    decision = "prompt",
+    justification = "The publish script can push package artifacts outside the repo. Review package, version, and registry target first.",
+    match = [
+        "bash scripts/publish-package.sh",
+    ],
+    not_match = [
+        "bash scripts/check-changeset.mjs",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Hard reset can discard local work. Use `git status` or `git diff` to inspect changes instead.",
+    match = [
+        "git reset --hard HEAD",
+    ],
+    not_match = [
+        "git reset HEAD~1",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "checkout", "--"],
+    decision = "forbidden",
+    justification = "Path checkout discards local edits. Use `git diff` to inspect changes and edit files intentionally.",
+    match = [
+        "git checkout -- AGENTS.md",
+    ],
+    not_match = [
+        "git checkout main",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "restore", "--source"],
+    decision = "forbidden",
+    justification = "Restoring from another source can silently discard work. Inspect the diff and restore manually if needed.",
+    match = [
+        "git restore --source HEAD -- packages/cli/README.md",
+    ],
+    not_match = [
+        "git restore --staged packages/cli/README.md",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", ["-fd", "-fdx", "-xdf", "-ffdx"]],
+    decision = "forbidden",
+    justification = "Destructive clean removes untracked files. Use preview commands such as `git clean -n` first.",
+    match = [
+        "git clean -fd",
+        "git clean -xdf",
+    ],
+    not_match = [
+        "git clean -n",
+    ],
+)
+
+prefix_rule(
+    pattern = ["rm", "-rf"],
+    decision = "forbidden",
+    justification = "Recursive forced deletion is destructive. Delete specific files intentionally after review.",
+    match = [
+        "rm -rf dist",
+    ],
+    not_match = [
+        "rm README.md",
+    ],
+)
+
+prefix_rule(
+    pattern = ["Remove-Item"],
+    decision = "prompt",
+    justification = "PowerShell deletion commands can remove files outside the workspace quickly. Review the target path first.",
+    match = [
+        "Remove-Item -Recurse -Force .\\dist",
+    ],
+    not_match = [
+        "Get-Item .\\dist",
+    ],
+)
