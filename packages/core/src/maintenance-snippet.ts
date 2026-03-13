@@ -8,7 +8,7 @@ export type MaintenanceSnippetResult = {
 };
 
 const CORE_RULES = [
-  "Treat natural language requests about stale, missing, inconsistent, or low-quality AGENTS.md, CLAUDE.md, rules, skills, workflows, or plans as Agent Lint work even if the user does not name Agent Lint explicitly.",
+  "Treat plain-English requests about stale, missing, inconsistent, or low-quality AGENTS.md, CLAUDE.md, rules, skills, workflows, or plans as Agent Lint work even if the user does not name Agent Lint explicitly.",
   "Treat structural change signals such as new modules, new directories, dependency changes, CI/config updates, environment/security changes, or repository reorganization as reasons to check whether context artifacts need updates.",
   "For full workspace review or fix requests, start with agentlint_plan_workspace_autofix to scan the repository and produce the action plan.",
   "For targeted structural changes, call agentlint_quick_check with changed paths and/or a short change description before editing any context artifacts.",
