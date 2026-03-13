@@ -159,30 +159,16 @@ export function DoctorApp({ onComplete, showBanner = true, saveReport = false }:
                 value: result.discoveredCount,
                 color: result.discoveredCount > 0 ? colors.success : colors.warning,
               },
-              {
-                label: "Missing",
-                value: result.missingCount,
-                color: result.missingCount > 0 ? colors.warning : colors.success,
-              },
             ]}
           />
 
-          {result.discovered.length > 0 && (
-            <>
-              <SectionTitle>Discovered artifacts</SectionTitle>
-              {result.discovered.map((item, i) => (
-                <SuccessItem key={i}>{item}</SuccessItem>
-              ))}
-            </>
-          )}
-
-          {result.missing.length > 0 && (
-            <>
-              <SectionTitle>Missing artifact types</SectionTitle>
-              {result.missing.map((item, i) => (
-                <ErrorItem key={i}>{item}</ErrorItem>
-              ))}
-            </>
+          <SectionTitle>Discovered artifacts</SectionTitle>
+          {result.discovered.length > 0 ? (
+            result.discovered.map((item) => (
+              <SuccessItem key={item}>{item}</SuccessItem>
+            ))
+          ) : (
+            <InfoItem>No context artifact files found.</InfoItem>
           )}
 
           {result.reportSaved === true && result.reportPath && (

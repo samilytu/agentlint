@@ -178,8 +178,7 @@ describe("App with initialCommand", () => {
 
       // Doctor should run and complete
       await waitFor(
-        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-              session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
         { timeoutMs: 10_000 },
       );
 
@@ -210,8 +209,7 @@ describe("App with initialCommand", () => {
     try {
       // Wait for doctor to complete
       await waitFor(
-        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-              session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
         { timeoutMs: 10_000 },
       );
 
@@ -249,8 +247,7 @@ describe("App with initialCommand", () => {
     try {
       // Wait for doctor to complete
       await waitFor(
-        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-              session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
         { timeoutMs: 10_000 },
       );
 
@@ -287,8 +284,7 @@ describe("App with initialCommand", () => {
 
     try {
       await waitFor(
-        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-              session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
         { timeoutMs: 10_000 },
       );
 

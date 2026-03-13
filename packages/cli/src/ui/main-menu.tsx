@@ -17,7 +17,7 @@ export interface MainMenuProps {
 const menuOptions: { label: string; value: MenuCommand }[] = [
   { label: "Set up MCP config (init)", value: "init" },
   { label: "Scan workspace (doctor)", value: "doctor" },
-  { label: "Get IDE prompt (prompt)", value: "prompt" },
+  { label: "Get prompt (prompt)", value: "prompt" },
   { label: "Exit", value: "exit" },
 ];
 
