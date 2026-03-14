@@ -1,5 +1,13 @@
 # @agent-lint/cli Changelog
 
+## 0.5.1
+
+### Patch Changes
+
+- a846ee6: Align maintenance guidance, fallback behavior, and context-artifact verification across the CLI and MCP packages.
+
+  This update makes the maintenance snippet canonical, tightens discovery and quick-check behavior, and keeps client-specific instruction files in sync with the generated maintenance contract.
+
 ## 0.5.0
 
 ### Minor Changes
