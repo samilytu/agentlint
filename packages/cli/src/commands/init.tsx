@@ -87,6 +87,10 @@ function formatMaintenance(result: MaintenanceInstallResult | undefined): string
   return "Unknown maintenance rule result";
 }
 
+function shouldPreferCliInstall(client: McpClient): boolean {
+  return client.id === "claude-code";
+}
+
 function printConfigResult(client: McpClient, result: InstallResult): void {
   switch (result.status) {
     case "created":
@@ -144,7 +148,7 @@ function runStdoutInit(options: { yes?: boolean; all?: boolean; withRules?: bool
   for (const client of clients) {
     const scopes = getAvailableScopes(client);
     const scope = scopes.includes("workspace") ? "workspace" : "global";
-    const configResult = installClient(client, scope, cwd, false);
+    const configResult = installClient(client, scope, cwd, shouldPreferCliInstall(client));
     printConfigResult(client, configResult);
 
     if (!options.withRules && !options.yes) {
@@ -200,7 +204,7 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
       const configResults = selectedClients.map((client) => ({
         client,
         scope: selectedScope,
-        configResult: installClient(client, selectedScope, cwd),
+        configResult: installClient(client, selectedScope, cwd, shouldPreferCliInstall(client)),
       }));
 
       setResults(configResults);
@@ -552,7 +556,9 @@ function ResultsView({
 
       {!maintenanceRequested && (
         <Box marginLeft={2} marginTop={1}>
-          <Text color={colors.muted}>Maintenance rules were not installed.</Text>
+          <Text color={colors.muted}>
+            Maintenance rules were not installed. Re-run `agent-lint init --with-rules` if you want ongoing context maintenance.
+          </Text>
         </Box>
       )}
 

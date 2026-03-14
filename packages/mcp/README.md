@@ -1,6 +1,6 @@
 # @agent-lint/mcp
 
-Read-only MCP server for keeping `AGENTS.md`, rules, and skills structured, current, and codebase-aware.
+Read-only MCP server for keeping `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans structured, current, and codebase-aware.
 
 ## Start the Server
 
@@ -21,7 +21,7 @@ npx @agent-lint/cli init
 | `agentlint_get_guidelines` | Return artifact guidance before creating or updating context files |
 | `agentlint_plan_workspace_autofix` | Scan a workspace and return a step-by-step fix plan |
 | `agentlint_quick_check` | Decide whether recent code changes require context updates |
-| `agentlint_emit_maintenance_snippet` | Return a reusable maintenance rule snippet for supported IDEs |
+| `agentlint_emit_maintenance_snippet` | Return a reusable maintenance snippet for managed client files or `AGENTS.md` / `CLAUDE.md` fallbacks |
 
 ## Current Resource Surface
 

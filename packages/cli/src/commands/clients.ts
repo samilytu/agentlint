@@ -6,14 +6,16 @@ import { execFileSync } from "node:child_process";
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type ClientId =
-  | "cursor"
-  | "windsurf"
-  | "vscode"
-  | "claude-desktop"
   | "claude-code"
   | "codex"
+  | "cursor"
   | "opencode"
+  | "windsurf"
+  | "claude-desktop"
+  | "vscode"
+  | "kilo-code"
   | "cline"
+  | "roo-code"
   | "kiro"
   | "zed";
 
@@ -39,6 +41,10 @@ export interface McpClient {
   detectBinaries: string[];
   /** Directory names to detect relative to cwd */
   detectDirs: string[];
+  /** Additional file or directory paths to detect relative to cwd */
+  detectPaths?: string[];
+  /** VS Code extension directory prefixes used for install detection */
+  detectExtensionPrefixes?: string[];
   /** If the client has its own CLI for adding MCP servers */
   cliCommand?: {
     binary: string;
@@ -111,9 +117,75 @@ function vscodeGlobalPath(): string {
   return path.join(appData(), "Code", "User", "mcp.json");
 }
 
+function vscodeUserPath(): string {
+  if (process.platform === "darwin") {
+    return path.join(home(), "Library", "Application Support", "Code", "User");
+  }
+  if (process.platform === "win32") {
+    const ad = process.env["APPDATA"] ?? path.join(home(), "AppData", "Roaming");
+    return path.join(ad, "Code", "User");
+  }
+  return path.join(appData(), "Code", "User");
+}
+
+function vscodeExtensionStoragePath(extensionId: string): string {
+  return path.join(vscodeUserPath(), "globalStorage", extensionId.toLowerCase(), "settings", "mcp_settings.json");
+}
+
+function vscodeExtensionsPath(): string {
+  return path.join(home(), ".vscode", "extensions");
+}
+
 // ── Client Registry ────────────────────────────────────────────────────
 
 export const CLIENT_REGISTRY: McpClient[] = [
+  {
+    id: "claude-code",
+    name: "Claude Code",
+    configFormat: "json",
+    rootKey: "mcpServers",
+    scopes: {
+      workspace: { pathTemplate: ".mcp.json", absolute: false },
+      global: { pathTemplate: path.join(home(), ".claude.json"), absolute: true },
+    },
+    detectBinaries: ["claude"],
+    detectDirs: [".claude"],
+    detectPaths: [".mcp.json"],
+    cliCommand: {
+      binary: "claude",
+      buildArgs: (scope: Scope) => [
+        "mcp",
+        "add",
+        "--transport",
+        "stdio",
+        "--scope",
+        scope === "global" ? "user" : "project",
+        MCP_SERVER_NAME,
+        "--",
+        ...(process.platform === "win32"
+          ? ["cmd", "/c", MCP_COMMAND, ...MCP_ARGS]
+          : [MCP_COMMAND, ...MCP_ARGS]),
+      ],
+    },
+  },
+  {
+    id: "codex",
+    name: "Codex",
+    configFormat: "toml",
+    rootKey: "mcp_servers",
+    scopes: {
+      workspace: { pathTemplate: ".codex/config.toml", absolute: false },
+      global: { pathTemplate: path.join(home(), ".codex", "config.toml"), absolute: true },
+    },
+    detectBinaries: ["codex"],
+    detectDirs: [".codex"],
+    cliCommand: {
+      binary: "codex",
+      buildArgs: (_scope: Scope) => [
+        "mcp", "add", MCP_SERVER_NAME, "--", MCP_COMMAND, ...MCP_ARGS,
+      ],
+    },
+  },
   {
     id: "cursor",
     name: "Cursor",
@@ -125,6 +197,19 @@ export const CLIENT_REGISTRY: McpClient[] = [
     },
     detectBinaries: ["cursor"],
     detectDirs: [".cursor"],
+  },
+  {
+    id: "opencode",
+    name: "OpenCode",
+    configFormat: "json",
+    rootKey: "mcp",
+    scopes: {
+      workspace: { pathTemplate: "opencode.json", absolute: false },
+      global: { pathTemplate: path.join(home(), ".config", "opencode", "opencode.json"), absolute: true },
+    },
+    detectBinaries: ["opencode"],
+    detectDirs: [],
+    detectPaths: ["opencode.json", ".opencode"],
   },
   {
     id: "windsurf",
@@ -140,18 +225,6 @@ export const CLIENT_REGISTRY: McpClient[] = [
     },
     detectBinaries: ["windsurf"],
     detectDirs: [".windsurf"],
-  },
-  {
-    id: "vscode",
-    name: "VS Code",
-    configFormat: "json",
-    rootKey: "servers",
-    scopes: {
-      workspace: { pathTemplate: ".vscode/mcp.json", absolute: false },
-      global: { pathTemplate: vscodeGlobalPath(), absolute: true },
-    },
-    detectBinaries: ["code"],
-    detectDirs: [".vscode"],
   },
   {
     id: "claude-desktop",
@@ -177,54 +250,30 @@ export const CLIENT_REGISTRY: McpClient[] = [
     detectDirs: [],
   },
   {
-    id: "claude-code",
-    name: "Claude Code",
+    id: "vscode",
+    name: "VS Code",
+    configFormat: "json",
+    rootKey: "servers",
+    scopes: {
+      workspace: { pathTemplate: ".vscode/mcp.json", absolute: false },
+      global: { pathTemplate: vscodeGlobalPath(), absolute: true },
+    },
+    detectBinaries: ["code"],
+    detectDirs: [".vscode"],
+  },
+  {
+    id: "kilo-code",
+    name: "Kilo Code",
     configFormat: "json",
     rootKey: "mcpServers",
     scopes: {
-      workspace: { pathTemplate: ".mcp.json", absolute: false },
-      global: { pathTemplate: path.join(home(), ".claude", ".mcp.json"), absolute: true },
+      workspace: { pathTemplate: ".kilocode/mcp.json", absolute: false },
+      global: { pathTemplate: vscodeExtensionStoragePath("kilocode.kilo-code"), absolute: true },
     },
-    detectBinaries: ["claude"],
-    detectDirs: [".claude"],
-    cliCommand: {
-      binary: "claude",
-      buildArgs: (scope: Scope) => [
-        "mcp", "add-json", MCP_SERVER_NAME,
-        JSON.stringify({ command: MCP_COMMAND, args: MCP_ARGS }),
-        "--scope", scope === "global" ? "user" : "project",
-      ],
-    },
-  },
-  {
-    id: "codex",
-    name: "Codex CLI",
-    configFormat: "toml",
-    rootKey: "mcp_servers",
-    scopes: {
-      workspace: { pathTemplate: ".codex/config.toml", absolute: false },
-      global: { pathTemplate: path.join(home(), ".codex", "config.toml"), absolute: true },
-    },
-    detectBinaries: ["codex"],
-    detectDirs: [".codex"],
-    cliCommand: {
-      binary: "codex",
-      buildArgs: (_scope: Scope) => [
-        "mcp", "add", MCP_SERVER_NAME, "--", MCP_COMMAND, ...MCP_ARGS,
-      ],
-    },
-  },
-  {
-    id: "opencode",
-    name: "OpenCode",
-    configFormat: "json",
-    rootKey: "mcp",
-    scopes: {
-      workspace: { pathTemplate: "opencode.json", absolute: false },
-      global: { pathTemplate: path.join(home(), ".config", "opencode", "opencode.json"), absolute: true },
-    },
-    detectBinaries: ["opencode"],
-    detectDirs: [],
+    detectBinaries: [],
+    detectDirs: [".kilocode"],
+    detectPaths: [".kilocode/mcp.json"],
+    detectExtensionPrefixes: ["kilocode.kilo-code-"],
   },
   {
     id: "cline",
@@ -239,6 +288,21 @@ export const CLIENT_REGISTRY: McpClient[] = [
     },
     detectBinaries: [],
     detectDirs: [],
+    detectExtensionPrefixes: ["saoudrizwan.claude-dev-"],
+  },
+  {
+    id: "roo-code",
+    name: "Roo Code",
+    configFormat: "json",
+    rootKey: "mcpServers",
+    scopes: {
+      workspace: { pathTemplate: ".roo/mcp.json", absolute: false },
+      global: { pathTemplate: vscodeExtensionStoragePath("rooveterinaryinc.roo-cline"), absolute: true },
+    },
+    detectBinaries: [],
+    detectDirs: [".roo"],
+    detectPaths: [".roo/mcp.json"],
+    detectExtensionPrefixes: ["rooveterinaryinc.roo-cline-"],
   },
   {
     id: "kiro",
@@ -246,13 +310,15 @@ export const CLIENT_REGISTRY: McpClient[] = [
     configFormat: "json",
     rootKey: "mcpServers",
     scopes: {
+      workspace: { pathTemplate: ".kiro/settings/mcp.json", absolute: false },
       global: {
         pathTemplate: path.join(home(), ".kiro", "settings", "mcp.json"),
         absolute: true,
       },
     },
     detectBinaries: ["kiro"],
-    detectDirs: [],
+    detectDirs: [".kiro"],
+    detectPaths: [".kiro/settings/mcp.json"],
   },
   {
     id: "zed",
@@ -295,7 +361,33 @@ function whichSync(binary: string): boolean {
 export interface DetectedClient {
   client: McpClient;
   /** How it was detected */
-  detectedBy: "binary" | "directory" | "config-exists";
+  detectedBy: "binary" | "directory" | "extension" | "config-exists";
+}
+
+function getWorkspaceDetectionPaths(client: McpClient, cwd: string): string[] {
+  return [
+    ...client.detectDirs.map((dir) => path.join(cwd, dir)),
+    ...(client.detectPaths ?? []).map((entry) => path.join(cwd, entry)),
+  ];
+}
+
+function hasExtensionInstall(prefixes: readonly string[] | undefined): boolean {
+  if (!prefixes || prefixes.length === 0) {
+    return false;
+  }
+
+  const extensionsDir = vscodeExtensionsPath();
+  if (!fs.existsSync(extensionsDir)) {
+    return false;
+  }
+
+  try {
+    const entries = fs.readdirSync(extensionsDir, { withFileTypes: true });
+    return entries.some((entry) =>
+      entry.isDirectory() && prefixes.some((prefix) => entry.name.toLowerCase().startsWith(prefix.toLowerCase())));
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -319,9 +411,16 @@ export function detectInstalledClients(cwd: string): DetectedClient[] {
     }
     if (seen.has(client.id)) continue;
 
-    // Check workspace directories
-    for (const dir of client.detectDirs) {
-      if (fs.existsSync(path.join(cwd, dir))) {
+    // Check VS Code extension installation directories
+    if (hasExtensionInstall(client.detectExtensionPrefixes)) {
+      seen.add(client.id);
+      results.push({ client, detectedBy: "extension" });
+    }
+    if (seen.has(client.id)) continue;
+
+    // Check workspace paths
+    for (const workspacePath of getWorkspaceDetectionPaths(client, cwd)) {
+      if (fs.existsSync(workspacePath)) {
         seen.add(client.id);
         results.push({ client, detectedBy: "directory" });
         break;
@@ -347,7 +446,11 @@ export function getDefaultSelectedClientIds(detected: DetectedClient[], cwd: str
         return true;
       }
 
-      return entry.client.detectDirs.some((dir) => fs.existsSync(path.join(cwd, dir)));
+      if (entry.detectedBy === "extension") {
+        return true;
+      }
+
+      return getWorkspaceDetectionPaths(entry.client, cwd).some((workspacePath) => fs.existsSync(workspacePath));
     })
     .map((entry) => entry.client.id);
 }

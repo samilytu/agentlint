@@ -4,7 +4,7 @@
 
 Bad context = bad code.
 
-Keep `AGENTS.md`, rules, and skills structured, current, and codebase-aware.
+Keep `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans structured, current, and codebase-aware.
 
 Agent Lint helps coding agents maintain the files that shape how they work: `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans. It stays local, does not call an LLM, and keeps the MCP server read-only. The CLI can write MCP client config when you run `init`; repository edits still belong to the client agent.
 
@@ -14,7 +14,7 @@ Agent Lint helps coding agents maintain the files that shape how they work: `AGE
 
 ## The Problem
 
-Your `AGENTS.md`, `CLAUDE.md`, rules, and skills files are the operating system of your coding agent. They shape how the agent plans, writes code, and makes decisions.
+Your `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans are the operating system of your coding agent. They shape how the agent plans, writes code, and makes decisions.
 
 Without a standard, agent context files drift fast:
 
@@ -103,13 +103,18 @@ connect MCP          scan workspace         hand off into IDE chat
 
 Try prompts like:
 
-- `Review this repo's agent context files, fix anything stale or missing, and apply the changes directly.`
+- `Review this repo's agent context files, fix anything stale or missing, and apply safe context-artifact updates directly.`
 - `I changed module structure and CI config. Update only the context files affected by those changes.`
 - `Add a persistent maintenance rule so AGENTS.md, rules, skills, workflows, and plans stay current after future structural changes.`
 
 In practice, this lets the agent scan the workspace, use the right guidance before editing, and add ongoing maintenance rules where supported.
 
-If the client has rules or instruction files, the maintenance snippet can go there. Otherwise, the same behavior can be appended to `AGENTS.md` or `CLAUDE.md`.
+Managed maintenance targets follow the client surface:
+
+- Cursor and Windsurf use managed rule files.
+- VS Code / Copilot appends a managed maintenance block to `.github/copilot-instructions.md`.
+- Claude-family clients prefer `CLAUDE.md`.
+- Other clients fall back to `AGENTS.md`.
 
 ## What You Get
 
@@ -128,7 +133,7 @@ If the client has rules or instruction files, the maintenance snippet can go the
 | `agentlint_get_guidelines` | Return artifact-specific guidance before creating or updating context files |
 | `agentlint_plan_workspace_autofix` | Scan a workspace and return a step-by-step fix plan |
 | `agentlint_quick_check` | Check whether recent code changes require context updates |
-| `agentlint_emit_maintenance_snippet` | Return a persistent rules snippet for ongoing context hygiene |
+| `agentlint_emit_maintenance_snippet` | Return a reusable maintenance snippet for managed client files or `AGENTS.md` / `CLAUDE.md` fallbacks |
 
 ### MCP resources
 
@@ -146,11 +151,13 @@ If the client has rules or instruction files, the maintenance snippet can go the
   <kbd>Claude Code</kbd>
   <kbd>Codex</kbd>
   <kbd>Cursor</kbd>
-  <kbd>Windsurf</kbd>
   <kbd>OpenCode</kbd>
-  <kbd>VS Code</kbd>
+  <kbd>Windsurf</kbd>
   <kbd>Claude Desktop</kbd>
+  <kbd>VS Code</kbd>
+  <kbd>Kilo Code</kbd>
   <kbd>Cline</kbd>
+  <kbd>Roo Code</kbd>
   <kbd>Kiro</kbd>
   <kbd>Zed</kbd>
 </p>

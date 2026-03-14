@@ -17,7 +17,7 @@ export function registerQuickCheckTool(server: McpServer): void {
       description:
         "Checks whether recent code changes require updates to AI agent context artifacts. " +
         "Provide changed file paths and/or a description of what changed. " +
-        "Returns signals indicating which artifacts (AGENTS.md, rules, workflows, etc.) may need updating and what action to take. " +
+        "Returns signals indicating which artifacts (AGENTS.md, CLAUDE.md, rules, skills, workflows, plans) may need updating and what action to take. " +
         "Call this after structural changes like adding modules, changing configs, or modifying dependencies.",
       inputSchema: asInputSchema(quickCheckInputSchema),
       annotations: {

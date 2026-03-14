@@ -3,7 +3,7 @@
   "version": "0.5.0",
   "type": "module",
   "license": "MIT",
-  "description": "CLI for keeping AGENTS.md, rules, and skills structured, current, and codebase-aware.",
+  "description": "CLI for keeping AGENTS.md, CLAUDE.md, rules, skills, workflows, and plans structured, current, and codebase-aware.",
   "author": "Agent Lint Contributors",
   "repository": {
     "type": "git",

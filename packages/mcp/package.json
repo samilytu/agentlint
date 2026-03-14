@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "type": "module",
   "license": "MIT",
-  "description": "Read-only MCP server for keeping AGENTS.md, rules, and skills structured, current, and codebase-aware.",
+  "description": "Read-only MCP server for keeping AGENTS.md, CLAUDE.md, rules, skills, workflows, and plans structured, current, and codebase-aware.",
   "author": "Agent Lint Contributors",
   "repository": {
     "type": "git",

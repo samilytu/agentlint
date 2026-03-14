@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import React from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DoctorApp } from "../src/commands/doctor.js";
 import { InitWizard } from "../src/commands/init.js";
 import { PromptApp } from "../src/commands/prompt.js";
@@ -147,7 +148,9 @@ describe("Embedded command flows", () => {
 
         await sleep(350);
         expect(onComplete).not.toHaveBeenCalled();
-        expect(session.getStdout()).toContain("Apply all changes directly.");
+        expect(session.getStdout().replace(/\s+/g, " ")).toContain(
+          "Apply safe context-artifact changes directly unless I explicitly",
+        );
 
         pressEnter(session.stdin);
 

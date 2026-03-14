@@ -1,73 +1,101 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
 import { buildMaintenanceSnippet } from "@agent-lint/core";
 
+function normalizeSnippet(input: string): string {
+  return input.replace(/\r\n/g, "\n").replace(/(?:\n)+$/u, "");
+}
+
 describe("maintenance-snippet", () => {
-  it("returns cursor snippet with .mdc path", () => {
-    const result = buildMaintenanceSnippet("cursor");
-    expect(result.targetPath).toBe(".cursor/rules/agentlint-maintenance.mdc");
-    expect(result.snippet).toContain("alwaysApply: true");
-    expect(result.snippet).toContain("agentlint_quick_check");
-    expect(result.markdown).toContain("# Maintenance Snippet for Cursor");
+  it("returns the expected target paths", () => {
+    expect(buildMaintenanceSnippet("cursor").targetPath).toBe(".cursor/rules/agentlint-maintenance.mdc");
+    expect(buildMaintenanceSnippet("windsurf").targetPath).toBe(".windsurf/rules/agentlint-maintenance.md");
+    expect(buildMaintenanceSnippet("vscode").targetPath).toBe(".github/copilot-instructions.md");
+    expect(buildMaintenanceSnippet("claude-desktop").targetPath).toBe("CLAUDE.md");
+    expect(buildMaintenanceSnippet("claude-code").targetPath).toBe("CLAUDE.md");
+    expect(buildMaintenanceSnippet("generic").targetPath).toBe("AGENTS.md");
+    expect(buildMaintenanceSnippet().targetPath).toBe("AGENTS.md");
   });
 
-  it("returns windsurf snippet", () => {
-    const result = buildMaintenanceSnippet("windsurf");
-    expect(result.targetPath).toBe(".windsurf/rules/agentlint-maintenance.md");
-    expect(result.snippet).toContain("agentlint_get_guidelines");
-  });
+  it("renders managed rule files with full section coverage", () => {
+    const clients = ["cursor", "windsurf"] as const;
 
-  it("returns vscode snippet targeting copilot-instructions", () => {
-    const result = buildMaintenanceSnippet("vscode");
-    expect(result.targetPath).toBe(".github/copilot-instructions.md");
-  });
-
-  it("returns claude-code snippet targeting CLAUDE.md", () => {
-    const result = buildMaintenanceSnippet("claude-code");
-    expect(result.targetPath).toBe("CLAUDE.md");
-  });
-
-  it("returns generic snippet targeting AGENTS.md", () => {
-    const result = buildMaintenanceSnippet("generic");
-    expect(result.targetPath).toBe("AGENTS.md");
-  });
-
-  it("defaults to generic when no client specified", () => {
-    const result = buildMaintenanceSnippet();
-    expect(result.targetPath).toBe("AGENTS.md");
-  });
-
-  it("markdown includes how-to-apply instructions", () => {
-    const result = buildMaintenanceSnippet("cursor");
-    expect(result.markdown).toContain("## How to apply");
-    expect(result.markdown).toContain("## What this does");
-  });
-
-  it("all snippets contain core rules", () => {
-    const clients = ["cursor", "windsurf", "vscode", "claude-code", "generic"] as const;
     for (const client of clients) {
-      const result = buildMaintenanceSnippet(client);
-      expect(result.snippet).toContain("agentlint_quick_check");
-      expect(result.snippet).toContain("agentlint_get_guidelines");
+      const snippet = buildMaintenanceSnippet(client).snippet;
+      expect(snippet).toContain("# Scope");
+      expect(snippet).toContain("# Activation");
+      expect(snippet).toContain("# Do");
+      expect(snippet).toContain("# Don't");
+      expect(snippet).toContain("# Verification");
+      expect(snippet).toContain("# Security");
+      expect(snippet).toContain("Tell the user when an update was triggered or shaped by Agent Lint maintenance guidance.");
     }
   });
 
-  it("teaches the agent to infer Agent Lint from plain-English context requests", () => {
-    const result = buildMaintenanceSnippet("generic");
-    expect(result.snippet).toContain("natural language requests");
-    expect(result.snippet).toContain("AGENTS.md");
-    expect(result.snippet).toContain("rules, skills, workflows, or plans");
+  it("renders append-based snippets as titled maintenance blocks", () => {
+    const clients = ["vscode", "claude-desktop", "claude-code", "generic"] as const;
+
+    for (const client of clients) {
+      const snippet = buildMaintenanceSnippet(client).snippet;
+      expect(snippet).toContain("## Agent Lint Context Maintenance");
+      expect(snippet).toContain("### Scope");
+      expect(snippet).toContain("### Activation");
+      expect(snippet).toContain("### Do");
+      expect(snippet).toContain("### Don't");
+      expect(snippet).toContain("### Verification");
+      expect(snippet).toContain("### Security");
+    }
   });
 
-  it("teaches the agent to react to structural changes", () => {
-    const result = buildMaintenanceSnippet("generic");
-    expect(result.snippet).toContain("new modules");
-    expect(result.snippet).toContain("dependency changes");
-    expect(result.snippet).toContain("CI/config updates");
+  it("keeps the dedicated Cursor artifact in parity with the generated snippet", () => {
+    const generated = buildMaintenanceSnippet("cursor").snippet;
+    const checkedIn = readFileSync(
+      new URL("../../../.cursor/rules/agentlint-maintenance.mdc", import.meta.url),
+      "utf-8",
+    );
+
+    expect(normalizeSnippet(generated)).toBe(normalizeSnippet(checkedIn));
   });
 
-  it("describes the intended Agent Lint tool order", () => {
-    const result = buildMaintenanceSnippet("generic");
-    expect(result.snippet).toContain("agentlint_plan_workspace_autofix");
-    expect(result.snippet).toContain("agentlint_quick_check");
-    expect(result.snippet).toContain("agentlint_emit_maintenance_snippet");
+  it("keeps the dedicated Windsurf artifact in parity with the generated snippet", () => {
+    const generated = buildMaintenanceSnippet("windsurf").snippet;
+    const checkedIn = readFileSync(
+      new URL("../../../.windsurf/rules/agentlint-maintenance.md", import.meta.url),
+      "utf-8",
+    );
+
+    expect(normalizeSnippet(generated)).toBe(normalizeSnippet(checkedIn));
+  });
+
+  it("keeps the Copilot instructions artifact in parity with the generated snippet", () => {
+    const generated = buildMaintenanceSnippet("vscode").snippet;
+    const checkedIn = readFileSync(
+      new URL("../../../.github/copilot-instructions.md", import.meta.url),
+      "utf-8",
+    );
+
+    expect(normalizeSnippet(generated)).toBe(normalizeSnippet(checkedIn));
+  });
+
+  it("describes the intended Agent Lint workflow and bounded auto-apply policy", () => {
+    const snippet = buildMaintenanceSnippet("generic").snippet;
+
+    expect(snippet).toContain("agentlint_plan_workspace_autofix");
+    expect(snippet).toContain("agentlint_quick_check");
+    expect(snippet).toContain("agentlint_get_guidelines");
+    expect(snippet).toContain("agentlint_emit_maintenance_snippet");
+    expect(snippet).toContain("unless the user explicitly asks for a different maintenance outcome");
+    expect(snippet).toContain("Do not expand this maintenance policy to unrelated code or docs outside context artifacts unless the user explicitly asks.");
+  });
+
+  it("documents replace and append install modes in markdown output", () => {
+    const replaceMarkdown = buildMaintenanceSnippet("cursor").markdown;
+    const appendMarkdown = buildMaintenanceSnippet("generic").markdown;
+    const claudeDesktopMarkdown = buildMaintenanceSnippet("claude-desktop").markdown;
+
+    expect(replaceMarkdown).toContain("Replace the managed file contents with the snippet above.");
+    expect(appendMarkdown).toContain("Append the snippet above to the end of the file.");
+    expect(claudeDesktopMarkdown).toContain("Maintenance Snippet for Claude Desktop");
   });
 });

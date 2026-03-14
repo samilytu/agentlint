@@ -15,10 +15,10 @@ export function registerEmitMaintenanceSnippetTool(server: McpServer): void {
     {
       title: "Emit Maintenance Snippet",
       description:
-        "Returns a persistent rule snippet that you should add to the user's IDE rules file. " +
-        "Once added, these rules ensure the LLM agent automatically maintains context artifacts " +
-        "(AGENTS.md, skills, rules, workflows, plans) whenever structural changes happen. " +
-        "Supports Cursor, Windsurf, VS Code, Claude Code, and generic formats. " +
+        "Returns a persistent maintenance snippet that you should add to the user's managed client file or root context file. " +
+        "Once added, these instructions help the LLM maintain context artifacts " +
+        "(AGENTS.md, CLAUDE.md, rules, skills, workflows, plans) whenever structural changes happen. " +
+        "Supports Cursor, Windsurf, VS Code, Claude Desktop, Claude Code, and generic formats. " +
         "Call this when the user asks to set up automatic context maintenance.",
       inputSchema: asInputSchema(emitMaintenanceSnippetInputSchema),
       annotations: {

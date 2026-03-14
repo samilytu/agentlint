@@ -37,7 +37,7 @@ export function registerAgentLintResources(server: McpServer): void {
     "agentlint-guidelines",
     new ResourceTemplate("agentlint://guidelines/{type}", {
       list: async () => ({
-        resources: artifactTypeValues.map((type) => ({
+        resources: artifactTypeValues.map((type: ArtifactType) => ({
           uri: `agentlint://guidelines/${type}`,
           name: `Agent Lint guidelines (${type})`,
           description: `Comprehensive guidelines for creating or updating ${type} artifacts.`,
@@ -72,7 +72,7 @@ export function registerAgentLintResources(server: McpServer): void {
     "agentlint-template",
     new ResourceTemplate("agentlint://template/{type}", {
       list: async () => ({
-        resources: artifactTypeValues.map((type) => ({
+        resources: artifactTypeValues.map((type: ArtifactType) => ({
           uri: `agentlint://template/${type}`,
           name: `Agent Lint template (${type})`,
           description: `Skeleton template for creating a new ${type} artifact.`,
@@ -107,7 +107,7 @@ export function registerAgentLintResources(server: McpServer): void {
     "agentlint-path-hints",
     new ResourceTemplate("agentlint://path-hints/{type}", {
       list: async () => ({
-        resources: artifactTypeValues.map((type) => ({
+        resources: artifactTypeValues.map((type: ArtifactType) => ({
           uri: `agentlint://path-hints/${type}`,
           name: `Agent Lint path hints (${type})`,
           description: `File discovery patterns for ${type} artifacts across IDE clients.`,

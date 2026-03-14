@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
 
 import {
   CLIENT_REGISTRY,
@@ -9,9 +10,10 @@ const cliReadme = readFileSync(
   new URL("../README.md", import.meta.url),
   "utf-8",
 );
+const rootReadme = readFileSync(new URL("../../../README.md", import.meta.url), "utf-8");
 
 const publicDocs = [
-  readFileSync(new URL("../../../README.md", import.meta.url), "utf-8"),
+  rootReadme,
   readFileSync(new URL("../../../CHANGELOG.md", import.meta.url), "utf-8"),
   readFileSync(new URL("../../../CONTRIBUTING.md", import.meta.url), "utf-8"),
   readFileSync(new URL("../../../PUBLISH.md", import.meta.url), "utf-8"),
@@ -37,6 +39,36 @@ describe("CLI README consistency", () => {
       expect(cliReadme).toContain(
         `| ${client.name} | ${client.configFormat.toUpperCase()} | ${formatScopes(client)} |`,
       );
+    }
+  });
+
+  it("keeps the supported IDE table in registry order", () => {
+    let previousIndex = -1;
+
+    for (const client of CLIENT_REGISTRY) {
+      const row = `| ${client.name} | ${client.configFormat.toUpperCase()} | ${formatScopes(client)} |`;
+      const currentIndex = cliReadme.indexOf(row);
+
+      expect(currentIndex).toBeGreaterThan(previousIndex);
+      previousIndex = currentIndex;
+    }
+  });
+
+  it("documents the maintenance target fallback behavior", () => {
+    expect(cliReadme).toContain(".github/copilot-instructions.md");
+    expect(cliReadme).toContain("`CLAUDE.md`");
+    expect(cliReadme).toContain("`AGENTS.md`");
+  });
+
+  it("keeps the root README client list aligned with registry order", () => {
+    let previousIndex = -1;
+
+    for (const client of CLIENT_REGISTRY) {
+      const token = `<kbd>${client.name}</kbd>`;
+      const currentIndex = rootReadme.indexOf(token);
+
+      expect(currentIndex).toBeGreaterThan(previousIndex);
+      previousIndex = currentIndex;
     }
   });
 });
