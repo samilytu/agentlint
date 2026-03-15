@@ -4,9 +4,9 @@
 
 Bad context = bad code.
 
-Keep `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans structured, current, and codebase-aware.
+Keep `AGENTS.md`/`CLAUDE.md`, skills, rules, workflows, and plans well-structured, up to date, and aligned with the codebase.
 
-Agent Lint helps coding agents maintain the files that shape how they work: `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans. It stays local, does not call an LLM, and keeps the MCP server read-only. The CLI can write MCP client config when you run `init`; repository edits still belong to the client agent.
+Agent Lint helps coding agents maintain the files that shape how they work: `AGENTS.md`/`CLAUDE.md`, skills, rules, workflows, and plans. The CLI can automatically add MCP client config when you run `init`. Once initialized, Agent Lint keeps your context files sharp and current through MCP and maintenance rules.
 
 [CLI on npm](https://www.npmjs.com/package/@agent-lint/cli) | [MCP on npm](https://www.npmjs.com/package/@agent-lint/mcp) | [GitHub](https://github.com/samilozturk/agentlint) | [GitLab](https://gitlab.com/bsamilozturk/agentlint)
 
@@ -14,7 +14,7 @@ Agent Lint helps coding agents maintain the files that shape how they work: `AGE
 
 ## The Problem
 
-Your `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans are the operating system of your coding agent. They shape how the agent plans, writes code, and makes decisions.
+Your `AGENTS.md`, `CLAUDE.md`, skills, rules, workflows, and plans are the operating system of your coding agent. They shape how the agent plans, writes code, and makes decisions.
 
 Without a standard, agent context files drift fast:
 
@@ -92,9 +92,9 @@ If you prefer direct MCP usage:
 npx -y @agent-lint/mcp
 ```
 
-## Prompt Your Agent, Not the Tools
+## Let Your Agent Drive the Work
 
-Once Agent Lint is connected, most coding agents can infer when to use it from a plain-English prompt.
+Once Agent Lint is connected, most coding agents can infer when to use it from a natural language prompt.
 
 ```text
 agent-lint init  ->  agent-lint doctor  ->  agent-lint prompt
@@ -109,12 +109,14 @@ Try prompts like:
 
 In practice, this lets the agent scan the workspace, use the right guidance before editing, and add ongoing maintenance rules where supported.
 
-Managed maintenance targets follow the client surface:
+**Environment-Aware Context Targeting**
 
-- Cursor and Windsurf use managed rule files.
-- VS Code / Copilot appends a managed maintenance block to `.github/copilot-instructions.md`.
-- Claude-family clients prefer `CLAUDE.md`.
-- Other clients fall back to `AGENTS.md`.
+By default, Agent Lint anchors your context in the industry-standard `AGENTS.md`. However, it natively detects your active IDE and automatically routes maintenance rules to the optimal location:
+
+- **`AGENTS.md`**: The universal standard and default target for most coding agents.
+- **`CLAUDE.md`**: Preferred and targeted automatically for Claude-family clients.
+- **Managed Rule Files**: Specifically optimized for Cursor and Windsurf workflows.
+- **`.github/copilot-instructions.md`**: Seamlessly appended with a maintenance block for VS Code / GitHub Copilot users.
 
 ## What You Get
 
