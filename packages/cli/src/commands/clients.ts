@@ -129,8 +129,8 @@ function vscodeUserPath(): string {
   return path.join(appData(), "Code", "User");
 }
 
-function vscodeExtensionStoragePath(extensionId: string): string {
-  return path.join(vscodeUserPath(), "globalStorage", extensionId.toLowerCase(), "settings", "mcp_settings.json");
+function vscodeExtensionStoragePath(extensionId: string, filename: string = "mcp_settings.json"): string {
+  return path.join(vscodeUserPath(), "globalStorage", extensionId.toLowerCase(), "settings", filename);
 }
 
 function vscodeExtensionsPath(): string {
@@ -147,7 +147,7 @@ export const CLIENT_REGISTRY: McpClient[] = [
     rootKey: "mcpServers",
     scopes: {
       workspace: { pathTemplate: ".mcp.json", absolute: false },
-      global: { pathTemplate: path.join(home(), ".mcp.json"), absolute: true },
+      global: { pathTemplate: path.join(home(), ".claude.json"), absolute: true },
     },
     detectBinaries: ["claude"],
     detectDirs: [".claude"],
@@ -269,7 +269,10 @@ export const CLIENT_REGISTRY: McpClient[] = [
     rootKey: "mcpServers",
     scopes: {
       workspace: { pathTemplate: ".kilocode/mcp.json", absolute: false },
-      global: { pathTemplate: vscodeExtensionStoragePath("kilocode.kilo-code"), absolute: true },
+      global: { 
+        pathTemplate: path.join(home(), ".config", "kilo", "kilo.json"), 
+        absolute: true 
+      },
     },
     detectBinaries: [],
     detectDirs: [".kilocode"],
@@ -285,7 +288,7 @@ export const CLIENT_REGISTRY: McpClient[] = [
       global: {
         pathTemplate:
           process.platform === "win32"
-            ? vscodeExtensionStoragePath("saoudrizwan.claude-dev")
+            ? vscodeExtensionStoragePath("saoudrizwan.claude-dev", "cline_mcp_settings.json")
             : path.join(home(), ".cline", "data", "settings", "cline_mcp_settings.json"),
         absolute: true,
       },
@@ -337,8 +340,8 @@ export const CLIENT_REGISTRY: McpClient[] = [
             ? path.join(home(), ".config", "zed", "settings.json")
             : process.platform === "win32"
               ? path.join(
-                  process.env["APPDATA"] ?? path.join(home(), "AppData", "Roaming"),
-                  "Zed",
+                  process.env["LOCALAPPDATA"] ?? path.join(home(), "AppData", "Local"),
+                  "zed",
                   "settings.json",
                 )
               : path.join(appData(), "zed", "settings.json"),

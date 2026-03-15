@@ -328,7 +328,7 @@ describe("resolveConfigPath", () => {
 
     expect(client).toBeDefined();
     expect(slash(resolveConfigPath(client!, "workspace", cwd)!)).toBe("/workspace/.mcp.json");
-    expect(slash(resolveConfigPath(client!, "global", cwd)!)).toMatch(/\.mcp\.json$/);
+    expect(slash(resolveConfigPath(client!, "global", cwd)!)).toMatch(/\.claude\.json$/);
   });
 
   it("resolves Roo Code, Kilo Code, and Kiro MCP files", () => {
@@ -345,7 +345,7 @@ describe("resolveConfigPath", () => {
     expect(slash(resolveConfigPath(roo!, "workspace", cwd)!)).toBe("/workspace/.roo/mcp.json");
     expect(slash(resolveConfigPath(kiro!, "workspace", cwd)!)).toBe("/workspace/.kiro/settings/mcp.json");
 
-    expect(slash(resolveConfigPath(kilo!, "global", cwd)!)).toContain("/Code/User/globalStorage/kilocode.kilo-code/settings/mcp_settings.json");
+    expect(slash(resolveConfigPath(kilo!, "global", cwd)!)).toMatch(/\/kilo(\/|\\)kilo\.json$/);
     expect(slash(resolveConfigPath(roo!, "global", cwd)!)).toContain("/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json");
     expect(slash(resolveConfigPath(kiro!, "global", cwd)!)).toMatch(/\.kiro\/settings\/mcp\.json$/);
   });

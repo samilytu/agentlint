@@ -48,18 +48,18 @@ When you install maintenance rules, Agent Lint uses the client-specific instruct
 
 | IDE | Format | Scopes | Notes |
 | --- | --- | --- | --- |
-| Claude Code | JSON | Workspace / Global | Uses `.mcp.json` or `~/.mcp.json`; prefers the `claude mcp add` flow when available |
+| Claude Code | JSON | Workspace / Global | Uses `.mcp.json` or `~/.claude.json`; prefers the `claude mcp add` flow when available |
 | Codex | TOML | Workspace / Global | Uses `.codex/config.toml` or `~/.codex/config.toml` |
 | Cursor | JSON | Workspace / Global | Writes `.cursor/mcp.json` or `~/.cursor/mcp.json` |
 | OpenCode | JSON | Workspace / Global | Uses `opencode.json` or the OpenCode user config |
 | Windsurf | JSON | Workspace / Global | Writes `.windsurf/mcp_config.json` or the Windsurf user config |
 | Claude Desktop | JSON | Global | Uses `claude_desktop_config.json` |
 | VS Code | JSON | Workspace / Global | Uses VS Code MCP `servers` format |
-| Kilo Code | JSON | Workspace / Global | Uses `.kilocode/mcp.json` or the Kilo VS Code global storage MCP settings file |
-| Cline | JSON | Global | Uses the Cline global MCP settings file |
+| Kilo Code | JSON | Workspace / Global | Uses `.kilocode/mcp.json` or `~/.config/kilo/kilo.json` |
+| Cline | JSON | Global | Uses `cline_mcp_settings.json` |
 | Roo Code | JSON | Workspace / Global | Uses `.roo/mcp.json` or the Roo Code VS Code global storage MCP settings file |
 | Kiro | JSON | Workspace / Global | Uses `.kiro/settings/mcp.json` or `~/.kiro/settings/mcp.json` |
-| Zed | JSON | Workspace / Global | Uses Zed context server settings |
+| Zed | JSON | Workspace / Global | Uses `.zed/settings.json` or global Zed settings (`%LOCALAPPDATA%` on Win) |
 | Antigravity | JSON | Global | Uses Antigravity MCP config |
 
 ## What `doctor` Produces
