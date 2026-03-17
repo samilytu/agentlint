@@ -59,39 +59,32 @@ Agent Lint gives your coding agent a repeatable workflow:
 </tr>
 </table>
 
-## 60-Second Quickstart
-
-Install nothing up front:
+## Quickstart
 
 ```bash
-npx @agent-lint/cli init
-npx @agent-lint/cli doctor
-npx @agent-lint/cli prompt
+npx @agent-lint/cli
 ```
 
-If you prefer `npm`:
+This opens an interactive session where you can run the core Agent Lint commands without leaving the terminal.
+
+### Core commands
+
+* `init` — set up MCP config and optionally install maintenance rules
+* `doctor` — scan the workspace and generate a context maintenance report
+* `prompt` — print a ready-to-paste prompt for your IDE chat
+
+Prefer a global install?
 
 ```bash
 npm install -g @agent-lint/cli
-agent-lint init
-agent-lint doctor
-agent-lint prompt
+agent-lint
 ```
 
-What each step does:
-
-1. `init` detects supported IDE clients, writes the right MCP config entry, and can install maintenance rules.
-2. `doctor` scans the repository and creates a workspace report.
-3. `prompt` prints a ready-to-paste prompt for your IDE chat so the agent can act on the report.
-
-If you add maintenance rules, rerunning `init` updates managed rule files cleanly instead of duplicating them.
-
-If you prefer direct MCP usage:
+Direct MCP only:
 
 ```bash
 npx -y @agent-lint/mcp
 ```
-
 ## Prompt Your Agent, Not the Tools
 
 Once Agent Lint is connected, most coding agents can infer when to use it from a plain-English prompt.
