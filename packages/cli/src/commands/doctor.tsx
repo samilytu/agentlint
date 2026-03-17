@@ -22,6 +22,11 @@ const REPORT_FILENAME = ".agentlint-report.md";
 export type DoctorResult = {
   discoveredCount: number;
   missingCount: number;
+  incompleteCount: number;
+  staleCount: number;
+  conflictingCount: number;
+  weakCount: number;
+  recommendedPromptMode: "broad-scan" | "targeted-maintenance";
   discovered: string[];
   missing: string[];
   markdown: string;
@@ -56,7 +61,12 @@ function buildDoctorScanResult(rootPath: string): DoctorScanResult {
 
   return {
     discoveredCount: discoveryResult.discovered.length,
-    missingCount: discoveryResult.missing.length,
+    missingCount: plan.summary.missingCount,
+    incompleteCount: plan.summary.incompleteCount,
+    staleCount: plan.summary.staleCount,
+    conflictingCount: plan.summary.conflictingCount,
+    weakCount: plan.summary.weakCount,
+    recommendedPromptMode: plan.summary.recommendedPromptMode,
     discovered: discoveryResult.discovered.map(
       (d) => `${d.relativePath} (${d.type})`,
     ),
@@ -159,6 +169,31 @@ export function DoctorApp({ onComplete, showBanner = true, saveReport = false }:
                 value: result.discoveredCount,
                 color: result.discoveredCount > 0 ? colors.success : colors.warning,
               },
+              {
+                label: "Missing Types",
+                value: result.missingCount,
+                color: result.missingCount > 0 ? colors.warning : colors.muted,
+              },
+              {
+                label: "Incomplete",
+                value: result.incompleteCount,
+                color: result.incompleteCount > 0 ? colors.warning : colors.muted,
+              },
+              {
+                label: "Stale",
+                value: result.staleCount,
+                color: result.staleCount > 0 ? colors.warning : colors.muted,
+              },
+              {
+                label: "Conflicting",
+                value: result.conflictingCount,
+                color: result.conflictingCount > 0 ? colors.warning : colors.muted,
+              },
+              {
+                label: "Weak",
+                value: result.weakCount,
+                color: result.weakCount > 0 ? colors.warning : colors.muted,
+              },
             ]}
           />
 
@@ -185,9 +220,24 @@ export function DoctorApp({ onComplete, showBanner = true, saveReport = false }:
             </>
           )}
 
+          <SectionTitle>Recommended flow</SectionTitle>
+          <InfoItem>
+            {result.recommendedPromptMode === "broad-scan"
+              ? "Run a broad maintenance handoff next. Missing or grouped findings suggest a full workspace pass."
+              : "Run a targeted maintenance handoff next. This workspace is better suited to focused artifact updates."}
+          </InfoItem>
+
+          <SectionTitle>Remediation order</SectionTitle>
+          <InfoItem>1. Fix missing artifact types and incomplete files first.</InfoItem>
+          <InfoItem>2. Remove security and hygiene issues such as wrong-tool guidance.</InfoItem>
+          <InfoItem>3. Repair stale references and canonical-path drift.</InfoItem>
+          <InfoItem>4. Strengthen weak-but-present guidance last.</InfoItem>
+
           {!onComplete && (
             <NextStep>
-              {`Run ${"agent-lint prompt"} to get a ready-to-paste prompt for your IDE.`}
+              {result.recommendedPromptMode === "broad-scan"
+                ? `Run ${"agent-lint prompt"} to get a broad workspace maintenance prompt for your IDE.`
+                : `Run ${"agent-lint prompt"} to get a targeted maintenance prompt for your IDE.`}
             </NextStep>
           )}
 
@@ -211,7 +261,7 @@ export function runDoctorCommand(options: {
 
   if (options.json) {
     const plan = buildWorkspaceAutofixPlan(rootPath);
-    process.stdout.write(JSON.stringify(plan.discoveryResult, null, 2) + "\n");
+    process.stdout.write(JSON.stringify({ ...plan.discoveryResult, summary: plan.summary }, null, 2) + "\n");
     return;
   }
 

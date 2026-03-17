@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   artifactTypeValues,
   type ArtifactType,
+  type ArtifactDiscoveryTier,
   getArtifactPathHints,
   getArtifactDiscoveryPatterns,
   parseArtifactContent,
@@ -17,12 +18,18 @@ export type DiscoveredArtifact = {
   sizeBytes: number;
   isEmpty: boolean;
   missingSections: string[];
+  staleReferences: string[];
+  placeholderSections: string[];
+  crossToolLeaks: string[];
+  weakSignals: string[];
 };
 
 export type MissingArtifact = {
   type: ArtifactType;
   suggestedPath: string;
   reason: string;
+  fallbackPaths: string[];
+  canonicalPathDrift: boolean;
 };
 
 export type WorkspaceDiscoveryResult = {
@@ -35,6 +42,7 @@ type CandidateArtifactFile = {
   filePath: string;
   relativePath: string;
   type: ArtifactType;
+  discoveryTier: ArtifactDiscoveryTier;
 };
 
 type ArtifactMatcher = {
@@ -260,6 +268,67 @@ const CANONICAL_MATCHERS: ArtifactMatcher[] = artifactTypeValues.flatMap((type: 
   })),
 );
 
+const FALLBACK_MATCHERS: ArtifactMatcher[] = artifactTypeValues.flatMap((type: ArtifactType) =>
+  getArtifactDiscoveryPatterns(type, "fallback").map((pattern: string) => ({
+    type,
+    regex: globToRegExp(pattern),
+  })),
+);
+
+type HeadingRange = {
+  normalizedHeading: string;
+  contentLines: string[];
+};
+
+type ArtifactAnalysis = {
+  missingSections: string[];
+  staleReferences: string[];
+  placeholderSections: string[];
+  crossToolLeaks: string[];
+  weakSignals: string[];
+};
+
+const PLACEHOLDER_PATTERNS = [
+  /\bTODO\b/i,
+  /\bTBD\b/i,
+  /\bcoming soon\b/i,
+  /\bfill (this|me|in)\b/i,
+  /\bplaceholder\b/i,
+  /\bto be added\b/i,
+  /<[^>]+>/,
+];
+
+const COMMAND_PATTERNS = [
+  /\bpnpm\s+(run\s+)?[a-z0-9:_-]+/i,
+  /\bnpm\s+(run\s+)?[a-z0-9:_-]+/i,
+  /\byarn\s+[a-z0-9:_-]+/i,
+  /\bbun\s+(run\s+)?[a-z0-9:_-]+/i,
+  /\bpytest\b/i,
+  /\bvitest\b/i,
+  /\beslint\b/i,
+  /\btsc\b/i,
+  /\bmake\s+[a-z0-9:_-]+/i,
+  /\bcargo\s+(test|build|run)/i,
+  /\bgo\s+(test|build|run)/i,
+  /\bnode\s+[a-z0-9_.\\/:-]+/i,
+  /\bnpx\s+[a-z0-9:_@./-]+/i,
+  /\bpython(?:3)?\s+[a-z0-9_.\\/:-]+/i,
+];
+
+const CLAUDE_SPECIFIC_PATTERNS: Array<{ regex: RegExp; label: string }> = [
+  { regex: /\bCLAUDE\.md\b/, label: "CLAUDE.md" },
+  { regex: /\bSKILL\.md\b/, label: "SKILL.md" },
+  { regex: /\bAnthropic\b/i, label: "Anthropic" },
+  { regex: /\bPreToolUse\b/, label: "PreToolUse" },
+  { regex: /\bPostToolUse\b/, label: "PostToolUse" },
+  { regex: /\bSubagentStop\b/, label: "SubagentStop" },
+  { regex: /\b\.claude\//, label: ".claude/" },
+  { regex: /\bmcpServers\b/, label: "mcpServers" },
+];
+
+const REPO_PATH_HINT_PATTERN =
+  /^(?:@)?(?:\.{1,2}\/|(?:\.?[A-Za-z0-9_-]+\/)+|(?:AGENTS|CLAUDE|README|CONTRIBUTING|PUBLISH)\.md$|(?:package|tsconfig|vitest\.config|eslint\.config)\.[A-Za-z0-9._-]+$|(?:pnpm-workspace|pnpm-lock|package-lock|server)\.[A-Za-z0-9._-]+$|(?:\.[A-Za-z0-9_-]+\/)+)/;
+
 function escapeRegExp(value: string): string {
   return value.replace(/[|\\{}()[\]^$+?.]/g, "\\$&");
 }
@@ -362,29 +431,273 @@ function requirementIsSatisfied(
   return requirement.bodyAliases?.some((alias) => alias.test(bodyText)) ?? false;
 }
 
-function matchArtifactType(relativePath: string): ArtifactType | null {
-  for (const matcher of CANONICAL_MATCHERS) {
-    if (matcher.regex.test(relativePath)) {
-      return matcher.type;
+function extractHeadingRanges(body: string): HeadingRange[] {
+  const lines = body.split(/\r?\n/);
+  const ranges: HeadingRange[] = [];
+  let currentHeading: string | null = null;
+  let currentContent: string[] = [];
+
+  const pushCurrent = () => {
+    if (!currentHeading) {
+      return;
+    }
+
+    ranges.push({
+      normalizedHeading: currentHeading,
+      contentLines: [...currentContent],
+    });
+  };
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*$/);
+    if (headingMatch) {
+      pushCurrent();
+      currentHeading = normalizeText(headingMatch[1]);
+      currentContent = [];
+      continue;
+    }
+
+    if (currentHeading) {
+      currentContent.push(line);
+    }
+  }
+
+  pushCurrent();
+  return ranges;
+}
+
+function findMatchingHeadingRange(
+  ranges: readonly HeadingRange[],
+  requirement: SectionRequirement,
+): HeadingRange | null {
+  for (const range of ranges) {
+    if (requirement.headingAliases.some((alias) => alias.test(range.normalizedHeading))) {
+      return range;
     }
   }
 
   return null;
 }
 
-function findMissingSections(
-  content: string,
-  type: ArtifactType,
+function hasRunnableCommand(lines: readonly string[]): boolean {
+  return lines.some((line) => COMMAND_PATTERNS.some((pattern) => pattern.test(line)));
+}
+
+function countChecklistItems(lines: readonly string[]): number {
+  return lines.filter((line) => /^\s*(?:[-*+]|\d+\.)\s+/.test(line)).length;
+}
+
+function isPlaceholderOnlySection(lines: readonly string[]): boolean {
+  const significantLines = lines
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (significantLines.length === 0) {
+    return true;
+  }
+
+  return significantLines.every((line) => PLACEHOLDER_PATTERNS.some((pattern) => pattern.test(line)));
+}
+
+function isExternalReference(reference: string): boolean {
+  return (
+    /^[a-z][a-z0-9+.-]*:\/\//i.test(reference) ||
+    reference.startsWith("mailto:") ||
+    reference.startsWith("#") ||
+    reference.startsWith("agentlint://")
+  );
+}
+
+function resolveRepoReference(
+  rootPath: string,
+  artifactFilePath: string,
+  reference: string,
+): string | null {
+  const strippedReference = reference
+    .replace(/^@/, "")
+    .split("#")[0]
+    .split("?")[0]
+    .trim();
+
+  if (
+    strippedReference.length === 0 ||
+    isExternalReference(strippedReference) ||
+    path.isAbsolute(strippedReference) ||
+    !REPO_PATH_HINT_PATTERN.test(strippedReference)
+  ) {
+    return null;
+  }
+
+  const resolved = /^(?:\.{1,2}\/)/.test(strippedReference)
+    ? path.resolve(path.dirname(artifactFilePath), strippedReference)
+    : path.resolve(rootPath, strippedReference);
+  const relativeToRoot = normalizePath(path.relative(rootPath, resolved));
+  if (relativeToRoot.startsWith("..")) {
+    return null;
+  }
+
+  return resolved;
+}
+
+function stripLineReference(reference: string): string {
+  return reference.replace(/(?::\d+)?(?:#L\d+(?:C\d+)?)?$/i, "");
+}
+
+function isLikelyInlineFileReference(reference: string): boolean {
+  if (/(?::\d+|#L\d+(?:C\d+)?)$/i.test(reference.trim())) {
+    return false;
+  }
+
+  const normalized = stripLineReference(reference.trim());
+  if (normalized.length === 0) {
+    return false;
+  }
+
+  if (/^(?:\.{1,2}\/)/.test(normalized)) {
+    return true;
+  }
+
+  const baseName = path.posix.basename(normalized.replace(/\\/g, "/"));
+  return /\.[a-z0-9]+$/i.test(baseName);
+}
+
+function findStaleReferences(
+  rootPath: string,
+  artifactFilePath: string,
+  body: string,
 ): string[] {
+  const staleReferences = new Set<string>();
+  const markdownLinkPattern = /\[[^\]]+\]\(([^)]+)\)/g;
+  const codeSpanPattern = /`([^`\n]+)`/g;
+
+  const maybeTrackReference = (rawReference: string) => {
+    const resolved = resolveRepoReference(rootPath, artifactFilePath, rawReference);
+    if (!resolved) {
+      return;
+    }
+
+    if (!fs.existsSync(resolved)) {
+      staleReferences.add(rawReference.replace(/^@/, "").trim());
+    }
+  };
+
+  for (const match of body.matchAll(markdownLinkPattern)) {
+    const reference = match[1];
+    if (reference) {
+      maybeTrackReference(reference);
+    }
+  }
+
+  for (const match of body.matchAll(codeSpanPattern)) {
+    const reference = match[1];
+    if (reference && isLikelyInlineFileReference(reference)) {
+      maybeTrackReference(reference);
+    }
+  }
+
+  return [...staleReferences].sort();
+}
+
+function findCrossToolLeaks(body: string, relativePath: string): string[] {
+  const normalizedRelativePath = normalizePath(relativePath);
+  const isCursorRule = normalizedRelativePath.startsWith(".cursor/rules/");
+  const isCopilotInstructions = normalizedRelativePath === ".github/copilot-instructions.md";
+  const isWindsurfRule = normalizedRelativePath.startsWith(".windsurf/rules/");
+
+  if (!isCursorRule && !isCopilotInstructions && !isWindsurfRule) {
+    return [];
+  }
+
+  const leaks = new Set<string>();
+  for (const pattern of CLAUDE_SPECIFIC_PATTERNS) {
+    if (pattern.regex.test(body)) {
+      leaks.add(pattern.label);
+    }
+  }
+
+  return [...leaks].sort();
+}
+
+function buildArtifactAnalysis(
+  rootPath: string,
+  filePath: string,
+  relativePath: string,
+  type: ArtifactType,
+  content: string,
+  gitignoreContent: string,
+): ArtifactAnalysis {
   const parsed = parseArtifactContent(content);
   const headings = extractHeadingTokens(parsed.body);
+  const headingRanges = extractHeadingRanges(parsed.body);
   const frontmatterKeys = extractFrontmatterKeys(parsed.frontmatter);
   const bodyText = normalizeText(parsed.body);
   const required = REQUIRED_SECTIONS[type];
 
-  return required
+  const missingSections = required
     .filter((requirement) => !requirementIsSatisfied(requirement, headings, frontmatterKeys, bodyText))
     .map((requirement) => requirement.name);
+
+  const placeholderSections = required
+    .map((requirement) => {
+      const range = findMatchingHeadingRange(headingRanges, requirement);
+      if (!range) {
+        return null;
+      }
+
+      return isPlaceholderOnlySection(range.contentLines) ? requirement.name : null;
+    })
+    .filter((value): value is string => value !== null);
+
+  const weakSignals: string[] = [];
+  for (const requirement of required) {
+    const range = findMatchingHeadingRange(headingRanges, requirement);
+    if (!range || isPlaceholderOnlySection(range.contentLines)) {
+      continue;
+    }
+
+    if (
+      ((requirement.name === "quick commands" && type === "agents") ||
+        (requirement.name === "verification" &&
+          (type === "agents" || type === "rules" || type === "workflows"))) &&
+      !hasRunnableCommand(range.contentLines) &&
+      countChecklistItems(range.contentLines) < 2
+    ) {
+      weakSignals.push(`${requirement.name} section lacks runnable commands`);
+    }
+  }
+
+  if (
+    /\bCLAUDE\.local\.md\b/.test(parsed.body) &&
+    !/CLAUDE\.local\.md/i.test(gitignoreContent)
+  ) {
+    weakSignals.push("mentions CLAUDE.local.md without a matching .gitignore entry");
+  }
+
+  return {
+    missingSections,
+    staleReferences: findStaleReferences(rootPath, filePath, parsed.body),
+    placeholderSections,
+    crossToolLeaks: findCrossToolLeaks(parsed.body, relativePath),
+    weakSignals: [...new Set(weakSignals)].sort(),
+  };
+}
+
+function matchArtifactCandidate(
+  relativePath: string,
+): { type: ArtifactType; discoveryTier: ArtifactDiscoveryTier } | null {
+  for (const matcher of CANONICAL_MATCHERS) {
+    if (matcher.regex.test(relativePath)) {
+      return { type: matcher.type, discoveryTier: "canonical" };
+    }
+  }
+
+  for (const matcher of FALLBACK_MATCHERS) {
+    if (matcher.regex.test(relativePath)) {
+      return { type: matcher.type, discoveryTier: "fallback" };
+    }
+  }
+
+  return null;
 }
 
 function collectCandidateFiles(
@@ -425,16 +738,17 @@ function collectCandidateFiles(
     }
 
     const relativePath = normalizePath(path.relative(rootPath, fullPath));
-    const type = matchArtifactType(relativePath);
+    const candidate = matchArtifactCandidate(relativePath);
 
-    if (!type) {
+    if (!candidate) {
       continue;
     }
 
     results.push({
       filePath: fullPath,
       relativePath,
-      type,
+      type: candidate.type,
+      discoveryTier: candidate.discoveryTier,
     });
   }
 }
@@ -465,12 +779,18 @@ export function discoverWorkspaceArtifacts(
 ): WorkspaceDiscoveryResult {
   const resolvedRoot = path.resolve(rootPath);
   const candidateFiles: CandidateArtifactFile[] = [];
+  const gitignorePath = path.join(resolvedRoot, ".gitignore");
+  const gitignoreContent = fs.existsSync(gitignorePath)
+    ? fs.readFileSync(gitignorePath, "utf-8")
+    : "";
+
   collectCandidateFiles(resolvedRoot, resolvedRoot, 0, candidateFiles);
 
   candidateFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 
   const discovered: DiscoveredArtifact[] = [];
   const foundTypes = new Set<ArtifactType>();
+  const fallbackPathsByType = new Map<ArtifactType, string[]>();
 
   for (const candidate of candidateFiles) {
     let content: string;
@@ -485,8 +805,22 @@ export function discoverWorkspaceArtifacts(
       continue;
     }
 
+    if (candidate.discoveryTier === "fallback") {
+      const existingFallbackPaths = fallbackPathsByType.get(candidate.type) ?? [];
+      existingFallbackPaths.push(candidate.relativePath);
+      fallbackPathsByType.set(candidate.type, existingFallbackPaths);
+      continue;
+    }
+
     foundTypes.add(candidate.type);
-    const missingSections = findMissingSections(content, candidate.type);
+    const analysis = buildArtifactAnalysis(
+      resolvedRoot,
+      candidate.filePath,
+      candidate.relativePath,
+      candidate.type,
+      content,
+      gitignoreContent,
+    );
 
     discovered.push({
       filePath: candidate.filePath,
@@ -495,17 +829,27 @@ export function discoverWorkspaceArtifacts(
       exists: true,
       sizeBytes: stats.size,
       isEmpty: content.trim().length === 0,
-      missingSections,
+      missingSections: analysis.missingSections,
+      staleReferences: analysis.staleReferences,
+      placeholderSections: analysis.placeholderSections,
+      crossToolLeaks: analysis.crossToolLeaks,
+      weakSignals: analysis.weakSignals,
     });
   }
 
   const missing: MissingArtifact[] = [];
   for (const type of artifactTypeValues) {
     if (!foundTypes.has(type)) {
+      const fallbackPaths = (fallbackPathsByType.get(type) ?? []).sort();
+      const canonicalPathDrift = fallbackPaths.length > 0;
       missing.push({
         type,
         suggestedPath: findSuggestedPath(type, resolvedRoot),
-        reason: `No canonical ${type} artifact found in the workspace.`,
+        reason: canonicalPathDrift
+          ? `No canonical ${type} artifact found in the workspace. Fallback candidates were found and should be reviewed or migrated.`
+          : `No canonical ${type} artifact found in the workspace.`,
+        fallbackPaths,
+        canonicalPathDrift,
       });
     }
   }

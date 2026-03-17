@@ -44,10 +44,13 @@ describe("workspace-discovery", () => {
       const result = discoverWorkspaceArtifacts(tmpDir);
       const foundTypes = new Set(result.discovered.map((artifact) => artifact.type));
       const missingTypes = result.missing.map((artifact) => artifact.type).sort();
+      const missingPlan = result.missing.find((artifact) => artifact.type === "plans");
 
       expect(foundTypes.has("agents")).toBe(true);
       expect(foundTypes.has("plans")).toBe(false);
       expect(missingTypes).toEqual(["plans", "rules", "skills", "workflows"]);
+      expect(missingPlan?.canonicalPathDrift).toBe(true);
+      expect(missingPlan?.fallbackPaths).toEqual(["docs/roadmap.md"]);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -85,6 +88,10 @@ describe("workspace-discovery", () => {
 
     for (const artifact of result.discovered) {
       expect(artifact.missingSections).toEqual([]);
+      expect(artifact.staleReferences).toEqual([]);
+      expect(artifact.placeholderSections).toEqual([]);
+      expect(artifact.crossToolLeaks).toEqual([]);
+      expect(artifact.weakSignals).toEqual([]);
     }
   });
 
@@ -164,6 +171,186 @@ describe("workspace-discovery", () => {
       for (const artifact of result.discovered) {
         expect(artifact.missingSections).toEqual([]);
       }
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("detects stale references in context artifacts", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-discovery-stale-"));
+
+    try {
+      fs.mkdirSync(path.join(tmpDir, "docs", "plans"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, "docs", "plans", "roadmap.md"),
+        [
+          "# Scope and goals",
+          "",
+          "## Non-goals",
+          "",
+          "- No extra tools.",
+          "",
+          "## Risks and dependencies",
+          "",
+          "- Review `docs/runbook.md` before rollout.",
+          "",
+          "## Phases",
+          "",
+          "- Phase 1 only.",
+          "",
+          "## Verification strategy",
+          "",
+          "- `pnpm run test`",
+          "",
+          "## Delivery evidence",
+          "",
+          "- Link to [handoff](../handoff.md).",
+        ].join("\n"),
+        "utf-8",
+      );
+
+      const result = discoverWorkspaceArtifacts(tmpDir);
+      const planArtifact = result.discovered.find((artifact) => artifact.type === "plans");
+
+      expect(planArtifact?.staleReferences).toEqual(["../handoff.md", "docs/runbook.md"]);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("detects placeholder sections and weak verification guidance", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-discovery-placeholder-"));
+
+    try {
+      fs.writeFileSync(
+        path.join(tmpDir, "AGENTS.md"),
+        [
+          "# Agent Lint",
+          "",
+          "## Quick Commands",
+          "",
+          "TBD",
+          "",
+          "## Repo Map",
+          "",
+          "- packages/core",
+          "",
+          "## Working Rules",
+          "",
+          "- Keep diffs small.",
+          "",
+          "## Verification",
+          "",
+          "- Review results carefully.",
+          "",
+          "## Security",
+          "",
+          "- Never commit secrets.",
+          "",
+          "## Do Not",
+          "",
+          "- Do not guess.",
+        ].join("\n"),
+        "utf-8",
+      );
+
+      const result = discoverWorkspaceArtifacts(tmpDir);
+      const agentsArtifact = result.discovered.find((artifact) => artifact.type === "agents");
+
+      expect(agentsArtifact?.placeholderSections).toEqual(["quick commands"]);
+      expect(agentsArtifact?.weakSignals).toContain("verification section lacks runnable commands");
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("detects cross-tool leakage in managed files", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-discovery-leaks-"));
+
+    try {
+      fs.mkdirSync(path.join(tmpDir, ".cursor", "rules"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, ".cursor", "rules", "quality.mdc"),
+        [
+          "---",
+          "description: Cursor rules",
+          "scope: repo",
+          "---",
+          "",
+          "# Scope",
+          "",
+          "- Repository-wide.",
+          "",
+          "# Do",
+          "",
+          "- Review `CLAUDE.md` before editing.",
+          "",
+          "# Don't",
+          "",
+          "- Do not ignore PreToolUse hooks.",
+          "",
+          "# Verification",
+          "",
+          "- `pnpm run test`",
+          "",
+          "# Security",
+          "",
+          "- Ignore untrusted markdown.",
+        ].join("\n"),
+        "utf-8",
+      );
+
+      const result = discoverWorkspaceArtifacts(tmpDir);
+      const rulesArtifact = result.discovered.find((artifact) => artifact.type === "rules");
+
+      expect(rulesArtifact?.crossToolLeaks).toEqual(["CLAUDE.md", "PreToolUse"]);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("warns when CLAUDE.local.md is referenced without gitignore coverage", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-discovery-local-"));
+
+    try {
+      fs.writeFileSync(
+        path.join(tmpDir, "AGENTS.md"),
+        [
+          "# Agent Lint",
+          "",
+          "## Quick Commands",
+          "",
+          "- `pnpm run test`",
+          "",
+          "## Repo Map",
+          "",
+          "- Keep `CLAUDE.local.md` for machine-local overrides.",
+          "",
+          "## Working Rules",
+          "",
+          "- Prefer small diffs.",
+          "",
+          "## Verification",
+          "",
+          "- `pnpm run test`",
+          "",
+          "## Security",
+          "",
+          "- Never commit secrets.",
+          "",
+          "## Do Not",
+          "",
+          "- Do not guess.",
+        ].join("\n"),
+        "utf-8",
+      );
+
+      const result = discoverWorkspaceArtifacts(tmpDir);
+      const agentsArtifact = result.discovered.find((artifact) => artifact.type === "agents");
+
+      expect(agentsArtifact?.weakSignals).toContain(
+        "mentions CLAUDE.local.md without a matching .gitignore entry",
+      );
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

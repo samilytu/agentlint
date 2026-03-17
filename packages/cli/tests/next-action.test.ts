@@ -1,8 +1,10 @@
-import { buildNextActions, type NextActionContext } from "../src/ui/next-action.js";
+import {
+  buildNextActions,
+  getNextActionGuidance,
+  type NextActionContext,
+} from "../src/ui/next-action.js";
 
 describe("buildNextActions", () => {
-  // ── After init ─────────────────────────────────────────────────────────
-
   it("recommends prompt after init when configs were created", () => {
     const context: NextActionContext = {
       completedCommand: "init",
@@ -25,8 +27,6 @@ describe("buildNextActions", () => {
     expect(options[1].value).toBe("prompt");
   });
 
-  // ── After doctor ───────────────────────────────────────────────────────
-
   it("recommends prompt after doctor", () => {
     const context: NextActionContext = {
       completedCommand: "doctor",
@@ -37,8 +37,6 @@ describe("buildNextActions", () => {
     expect(options[1].value).toBe("init");
   });
 
-  // ── After prompt ───────────────────────────────────────────────────────
-
   it("recommends doctor after prompt", () => {
     const context: NextActionContext = {
       completedCommand: "prompt",
@@ -48,8 +46,6 @@ describe("buildNextActions", () => {
     expect(options[0].label).toContain("recommended");
     expect(options[1].value).toBe("init");
   });
-
-  // ── Navigation options always present ──────────────────────────────────
 
   it("always ends with 'Back to menu' and 'Exit'", () => {
     const contexts: NextActionContext[] = [
@@ -78,23 +74,37 @@ describe("buildNextActions", () => {
 
     for (const context of contexts) {
       const options = buildNextActions(context);
-      // At least 2 commands + "Back to menu" + "Exit"
       expect(options.length).toBeGreaterThanOrEqual(4);
     }
   });
-
-  // ── Edge: unknown command falls through to default ─────────────────────
 
   it("provides all three commands for unknown completedCommand", () => {
     const context: NextActionContext = {
       completedCommand: "exit" as NextActionContext["completedCommand"],
     };
     const options = buildNextActions(context);
-    const values = options.map((o) => o.value);
+    const values = options.map((option) => option.value);
     expect(values).toContain("init");
     expect(values).toContain("doctor");
     expect(values).toContain("prompt");
     expect(values).toContain("menu");
     expect(values).toContain("exit");
+  });
+
+  it("explains the recommended sequence after doctor", () => {
+    const guidance = getNextActionGuidance({ completedCommand: "doctor" });
+    const options = buildNextActions({ completedCommand: "doctor" });
+
+    expect(guidance.order).toContain("1. prompt");
+    expect(guidance.order).toContain("2. init");
+    expect(options[0]?.label).toContain("handoff prompt");
+  });
+
+  it("keeps navigation options short while action labels carry descriptions", () => {
+    const options = buildNextActions({ completedCommand: "prompt" });
+
+    expect(options.find((item) => item.value === "doctor")?.label).toContain("Rescan the workspace");
+    expect(options.find((item) => item.value === "menu")?.label).toBe("Back to menu");
+    expect(options.find((item) => item.value === "exit")?.label).toBe("Exit");
   });
 });

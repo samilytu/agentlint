@@ -149,7 +149,7 @@ describe("Embedded command flows", () => {
         await sleep(350);
         expect(onComplete).not.toHaveBeenCalled();
         expect(session.getStdout().replace(/\s+/g, " ")).toContain(
-          "Apply safe context-artifact changes directly unless I explicitly",
+          "Prioritize missing artifacts first",
         );
 
         pressEnter(session.stdin);
@@ -181,6 +181,7 @@ describe("Embedded command flows", () => {
         await sleep(350);
         expect(onComplete).not.toHaveBeenCalled();
         expect(session.getStdout()).toContain("Copy the prompt below manually.");
+        expect(session.getStdout()).toContain("Prioritize missing artifacts first");
 
         pressEnter(session.stdin);
 

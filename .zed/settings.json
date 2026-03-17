@@ -1,0 +1,14 @@
+{
+  "context_servers": {
+    "agentlint": {
+      "command": {
+        "path": "npx",
+        "args": [
+          "-y",
+          "@agent-lint/mcp"
+        ]
+      },
+      "settings": {}
+    }
+  }
+}

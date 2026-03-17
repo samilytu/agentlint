@@ -17,8 +17,8 @@ The `agent-lint` binary opens an interactive TUI in a TTY and falls back to help
 | Command | Purpose |
 | --- | --- |
 | `agent-lint init` | Detect supported IDE clients, install an Agent Lint MCP entry, and optionally add maintenance rules |
-| `agent-lint doctor` | Scan the workspace and generate a context maintenance report |
-| `agent-lint prompt` | Print a ready-to-paste IDE prompt for the next maintenance step |
+| `agent-lint doctor` | Scan the workspace and generate a context maintenance report grouped into missing types, incomplete files, stale, conflicting, and weak findings |
+| `agent-lint prompt` | Print a ready-to-paste IDE prompt for the next maintenance step, using broad-scan or targeted-maintenance wording plus local change signals when available |
 
 ### Common command examples
 
@@ -72,7 +72,23 @@ When you install maintenance rules, Agent Lint uses the client-specific instruct
 - workflows
 - plans
 
+It groups what it finds into:
+
+- missing artifact types
+- incomplete files with empty or missing required sections
+- stale references and canonical-path drift
+- conflicting tool-specific guidance
+- weak-but-present sections such as placeholders or thin verification guidance
+
 It can save a report file and can also print to stdout or JSON for automation.
+
+## What `prompt` Produces
+
+`agent-lint prompt` reads the current workspace scan and chooses between two handoff styles:
+
+- broad scan when artifacts are missing or grouped findings suggest a full pass
+- targeted maintenance when canonical artifacts already look healthy and a narrower follow-up is enough
+- local git change signals are included when available so the handoff can reflect recent file changes
 
 ## Related
 

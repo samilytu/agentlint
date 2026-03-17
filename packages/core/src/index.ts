@@ -17,6 +17,7 @@ export {
 export {
   buildWorkspaceAutofixPlan,
   type WorkspaceAutofixPlan,
+  type WorkspacePlanSummary,
 } from "./plan-builder.js";
 
 export {

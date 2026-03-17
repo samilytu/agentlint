@@ -30,6 +30,27 @@ function isDirectoryLikePath(input: string): boolean {
 
 const PATH_SIGNALS: readonly SignalRule[] = [
   {
+    test: (p) => /(^|\/)\.cursor\/rules\/.+\.(md|mdc)$/i.test(p),
+    trigger: "Cursor rule file changed",
+    affectedArtifacts: ["rules", "agents", "plans"],
+    action:
+      "Review Cursor-managed rules for scope drift, wrong-tool guidance, and maintenance parity with the root context artifacts.",
+  },
+  {
+    test: (p) => /(^|\/)\.github\/copilot-instructions\.md$/i.test(p),
+    trigger: "Copilot instruction file changed",
+    affectedArtifacts: ["agents", "rules", "plans"],
+    action:
+      "Review Copilot-specific instructions for cross-tool leakage, maintenance parity, and whether the root guidance still matches the managed file.",
+  },
+  {
+    test: (p) => /(^|\/)(AGENTS\.md|CLAUDE\.md)$/i.test(p),
+    trigger: "Root context baseline changed",
+    affectedArtifacts: ["agents", "rules", "workflows", "plans"],
+    action:
+      "Treat the root context file as the baseline truth source. Re-check managed client files, maintenance snippets, and related docs/tests for drift.",
+  },
+  {
     test: (p) => /(^|\/)(package\.json|pnpm-lock\.ya?ml|package-lock\.json|yarn\.lock)$/i.test(p),
     trigger: "Package manifest or lockfile changed",
     affectedArtifacts: ["agents", "rules"],
@@ -76,11 +97,11 @@ const PATH_SIGNALS: readonly SignalRule[] = [
   },
   {
     test: (p) =>
-      /packages\/(cli\/src\/commands\/clients\.ts|cli\/src\/commands\/maintenance-writer\.ts|mcp\/src\/catalog\.ts|mcp\/src\/server\.ts|core\/src\/maintenance-snippet\.ts)$/i.test(p),
+      /packages\/(cli\/src\/commands\/clients\.ts|cli\/src\/commands\/maintenance-writer\.ts|cli\/src\/commands\/doctor\.tsx|cli\/src\/commands\/prompt\.tsx|mcp\/src\/catalog\.ts|mcp\/src\/server\.ts|core\/src\/maintenance-snippet\.ts|core\/src\/plan-builder\.ts|core\/src\/workspace-discovery\.ts|core\/src\/quick-check\.ts)$/i.test(p),
     trigger: "Agent Lint public maintenance surface changed",
     affectedArtifacts: ["agents", "rules", "plans"],
     action:
-      "Review root guidance, managed maintenance artifacts, and public docs/tests together so clients, prompts, and instructions stay aligned.",
+      "Review root guidance, managed maintenance artifacts, doctor/prompt wording, and public docs/tests together so clients, prompts, and instructions stay aligned.",
   },
   {
     test: (p) => isDirectoryLikePath(p),

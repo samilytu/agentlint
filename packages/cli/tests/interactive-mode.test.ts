@@ -68,6 +68,12 @@ describe("Interactive TTY flow", () => {
 
     try {
       await waitFor(() => session.getStdout().toUpperCase().includes("WHAT WOULD YOU LIKE TO DO?"));
+      await waitFor(() => session.getStdout().includes("Start here if you are unsure:"));
+      expect(session.getStdout()).toContain("1. init -> 2. doctor -> 3. prompt");
+      expect(session.getStdout()).toContain(
+        "Set up MCP config (init) - Install or refresh MCP config and managed maintenance rules.",
+      );
+      expect(session.getStdout()).not.toContain("doctor - Scan the workspace for missing, stale");
 
       await sleep(100);
       pressEnter(session.stdin);
@@ -97,6 +103,7 @@ describe("Interactive TTY flow", () => {
       pressEnter(session.stdin);
 
       await waitFor(() => session.getStdout().toUpperCase().includes("WHAT'S NEXT?"));
+      expect(session.getStdout()).toContain("Recommended order from here:");
     } finally {
       session.cleanup();
       process.chdir(originalCwd);
@@ -191,6 +198,10 @@ describe("App with initialCommand", () => {
 
       // Should show "What's next?" instead of exiting
       await waitFor(() => session.getStdout().toUpperCase().includes("WHAT'S NEXT?"));
+      expect(session.getStdout()).toContain("Recommended order from here:");
+      expect(session.getStdout()).toContain(
+        "Get prompt (recommended) - Turn the scan results into a ready-to-use handoff prompt.",
+      );
     } finally {
       session.cleanup();
       process.chdir(originalCwd);

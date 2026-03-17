@@ -32,6 +32,9 @@ describe("CLI README consistency", () => {
     expect(cliReadme).toContain("`agent-lint init`");
     expect(cliReadme).toContain("`agent-lint doctor`");
     expect(cliReadme).toContain("`agent-lint prompt`");
+    expect(cliReadme).toContain("missing types, incomplete files, stale, conflicting, and weak findings");
+    expect(cliReadme).toContain("broad-scan or targeted-maintenance");
+    expect(cliReadme).toContain("local git change signals");
   });
 
   it("keeps the supported IDE table aligned with CLIENT_REGISTRY", () => {
@@ -70,6 +73,12 @@ describe("CLI README consistency", () => {
       expect(currentIndex).toBeGreaterThan(previousIndex);
       previousIndex = currentIndex;
     }
+  });
+
+  it("documents the grouped doctor and prompt behavior in the root README", () => {
+    expect(rootReadme).toContain("missing types, incomplete files, stale references, conflicting guidance, and weak-but-present");
+    expect(rootReadme).toContain("broad workspace scan or a targeted maintenance handoff");
+    expect(rootReadme).toContain("local change signals");
   });
 });
 

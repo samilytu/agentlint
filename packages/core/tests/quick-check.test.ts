@@ -33,6 +33,34 @@ describe("quick-check", () => {
     expect(result.signals.some((s) => s.trigger.includes("instruction file"))).toBe(true);
   });
 
+  it("detects Cursor rule changes with a specific maintenance signal", () => {
+    const result = runQuickCheck([".cursor/rules/new-rule.mdc"]);
+    expect(result.signals.some((s) => s.trigger === "Cursor rule file changed")).toBe(true);
+  });
+
+  it("detects Copilot instruction changes with a specific maintenance signal", () => {
+    const result = runQuickCheck([".github/copilot-instructions.md"]);
+    expect(result.signals.some((s) => s.trigger === "Copilot instruction file changed")).toBe(true);
+  });
+
+  it("detects root context baseline changes", () => {
+    const result = runQuickCheck(["AGENTS.md"]);
+    expect(result.signals.some((s) => s.trigger === "Root context baseline changed")).toBe(true);
+  });
+
+  it("detects doctor, prompt, and core planning files as public maintenance surface changes", () => {
+    const result = runQuickCheck([
+      "packages/cli/src/commands/doctor.tsx",
+      "packages/cli/src/commands/prompt.tsx",
+      "packages/core/src/plan-builder.ts",
+      "packages/core/src/workspace-discovery.ts",
+    ]);
+
+    expect(
+      result.signals.some((s) => s.trigger === "Agent Lint public maintenance surface changed"),
+    ).toBe(true);
+  });
+
   it("detects description-based signals for new feature", () => {
     const result = runQuickCheck(undefined, "Added new feature for payments");
     expect(result.signals.some((s) => s.trigger.includes("New module or feature"))).toBe(true);

@@ -50,10 +50,10 @@ Agent Lint gives your coding agent a repeatable workflow:
 ### With <font color="#84B179">A</font><font color="#93BE82">g</font><font color="#A2CB8B">e</font><font color="#B5DAA3">n</font><font color="#C7EABB">t</font> <font color="#D8EFBC">L</font><font color="#D8EFBC">i</font><font color="#E8F5BD">n</font><font color="#E8F5BD">t</font>
 
 - Artifact-specific guidance tells the agent what good looks like before it edits anything.
-- Workspace scanning finds missing, stale, and incomplete context files from the codebase itself.
+- Workspace scanning finds missing types, incomplete files, stale references, conflicting guidance, and weak-but-present context files from the codebase itself.
 - `quick_check` flags when structural changes mean your agent instructions now need maintenance.
 - Shared conventions make context quality reviewable instead of subjective.
-- `prompt` and maintenance snippets turn context hygiene into a repeatable developer workflow.
+- `prompt` and maintenance snippets turn context hygiene into a repeatable developer workflow with broad-scan and targeted-maintenance handoffs.
 
 </td>
 </tr>
@@ -119,8 +119,8 @@ By default, Agent Lint anchors your context in the industry-standard `AGENTS.md`
 | Command | Purpose |
 | --- | --- |
 | `agent-lint init` | Set up Agent Lint MCP config and optionally install maintenance rules |
-| `agent-lint doctor` | Scan the workspace and generate a context maintenance report |
-| `agent-lint prompt` | Print a ready-to-paste IDE prompt that tells the agent what to do next |
+| `agent-lint doctor` | Scan the workspace and generate a context maintenance report grouped into missing types, incomplete files, stale, conflicting, and weak findings |
+| `agent-lint prompt` | Print a ready-to-paste IDE prompt that chooses a broad workspace scan or a targeted maintenance handoff using current workspace findings and local change signals when available |
 
 ### MCP tools
 
@@ -169,6 +169,35 @@ For exact formats and scope support, see:
 - Local-first. No hosted LLM, no database, and no auth layer.
 - Read-only MCP server. Agent Lint returns guidance; your client agent makes repository changes.
 - Lightweight by design. Separate CLI and MCP packages, minimal dependencies, and strict TypeScript throughout.
+
+## Why Agent Lint Takes This Shape
+
+Agent Lint is informed by official documentation across the agent-tool ecosystem and by a narrower set of field reports from practitioners who document what actually improves agent output in real repositories. The overlap across those sources is consistent: keep context lean, make verification explicit, use progressive disclosure for specialized knowledge, and treat plans, workflows, and maintenance rules as operational artifacts rather than prompt dumps.
+
+When a primary source exists, Agent Lint follows that source first. Community writing is used to compare patterns across tools and to stress-test what belongs in durable repository guidance.
+
+### Official docs and specifications
+
+- [Anthropic: Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) - context scoping, retrieval, and agent workflow design.
+- [Anthropic Claude Code docs: Best practices](https://docs.claude.com/en/docs/claude-code/best-practices) - concise project instructions, verification loops, and durable project guidance.
+- [Anthropic Claude Code docs: Memory](https://docs.claude.com/en/docs/claude-code/memory) - project memory hierarchy, local overrides, and how durable instructions are loaded.
+- [Claude API docs: Skill authoring best practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices) - progressive disclosure, metadata quality, and skill packaging guidance.
+- [OpenAI Cookbook: Using PLANS.md for multi-hour problem solving](https://developers.openai.com/cookbook/articles/codex_exec_plans/) - long-running task decomposition and durable planning patterns.
+- [AGENTS.md](https://agents.md/) - the open format and shared vocabulary for repository-level coding-agent guidance.
+- [Windsurf Docs: AGENTS.md](https://docs.windsurf.com/windsurf/cascade/agents-md) - agent instruction file behavior in Windsurf.
+- [Windsurf Docs: Workflows](https://docs.windsurf.com/windsurf/cascade/workflows) - workflow artifacts and repeatable agent execution paths.
+- [GitHub Docs: Add custom instructions for Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/add-custom-instructions) - repository and user instruction surfaces for Copilot CLI.
+- [Roo Code Docs: Custom Instructions](https://docs.roocode.com/features/custom-instructions) - repository and user-level instruction handling in Roo Code.
+
+### Selected field notes and implementation reports
+
+- [Addy Osmani: Agentic Engineering](https://addyosmani.com/blog/agentic-engineering/) - practical patterns for tool-using coding agents.
+- [HumanLayer: Writing a good CLAUDE.md](https://www.humanlayer.dev/blog/writing-a-good-claude-md) - concise instruction design, verification emphasis, and context hygiene.
+- [Builder.io: Improve your AI code output with AGENTS.md](https://www.builder.io/blog/agents-md) - actionable repository guidance patterns for coding agents.
+- [Sundeep Teki: From Vibe Coding to Context Engineering](https://www.sundeepteki.org/blog/from-vibe-coding-to-context-engineering-a-blueprint-for-production-grade-genai-systems) - production-oriented framing for context engineering systems.
+- [Anthropic's guide to Claude Code best practices (discussion thread)](https://www.reddit.com/r/ClaudeAI/comments/1k5slll/anthropics_guide_to_claude_code_best_practices/) - practitioner discussion around real-world Claude Code usage.
+
+Agent Lint does not mirror any one source directly. It uses the overlap between these references to shape workspace scanning, artifact guidance, maintenance snippets, and context-aware maintenance workflows, while keeping the repository code, tests, and package docs as the local source of truth.
 
 ## Contributing
 
