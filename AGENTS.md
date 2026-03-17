@@ -91,11 +91,21 @@
 
 ## Agent Lint Context Maintenance
 
+### Scope
+
 - Treat plain-English requests about stale, missing, inconsistent, or low-quality AGENTS.md, CLAUDE.md, rules, skills, workflows, or plans as Agent Lint work even if the user does not name Agent Lint explicitly.
 - Treat structural change signals such as new modules, new directories, dependency changes, CI/config updates, environment/security changes, or repository reorganization as reasons to check whether context artifacts need updates.
+
+### Workflow
+
 - For full workspace review or fix requests, start with `agentlint_plan_workspace_autofix` to scan the repository and produce the action plan.
 - For targeted structural changes, call `agentlint_quick_check` with changed paths and/or a short change description before editing any context artifacts.
 - Before creating or updating any AGENTS.md, CLAUDE.md, skills, rules, workflows, or plans file, call `agentlint_get_guidelines` for the artifact type to get the current specification.
 - When the user wants ongoing upkeep, use `agentlint_emit_maintenance_snippet` where supported or append equivalent maintenance instructions to the main project context file.
-- Apply recommended context artifact changes directly once Agent Lint has identified what to update.
+
+### Behavior
+
+- Apply recommended context artifact changes directly once Agent Lint has identified what to update, unless the user explicitly asks for a different maintenance outcome.
+- Tell the user when an update was triggered or shaped by Agent Lint maintenance guidance.
+- Do not expand this maintenance policy to unrelated code or docs outside context artifacts unless the user explicitly asks.
 - Keep context artifact files concise and reference docs instead of duplicating them.

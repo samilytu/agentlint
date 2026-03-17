@@ -49,11 +49,11 @@ Configure these GitLab CI/CD variables:
   - dedicated project access token
   - minimum scope needed to push `release/next`, create tags, and open or update merge requests
 - `GITHUB_MIRROR_TOKEN`
-  - fine-grained GitHub token with branch and tag push access to `samilytu/agentlint`
+  - fine-grained GitHub token with branch and tag push access to `samilozturk/agentlint`
   - if the target repo contains `.github/workflows`, also grant read/write access for Workflows
 - `GITHUB_MIRROR_REPOSITORY`
   - optional override for the GitHub mirror target
-  - defaults to `samilytu/agentlint`
+  - defaults to `samilozturk/agentlint`
 - `NPM_TOKEN`
   - temporary fallback only while trusted publishing is being proven
   - remove it after trusted publishing succeeds consistently

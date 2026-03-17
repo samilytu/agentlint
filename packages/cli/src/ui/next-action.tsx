@@ -31,16 +31,16 @@ export function buildNextActions(context: NextActionContext): ActionOption[] {
   switch (completedCommand) {
     case "init":
       if (initCreatedConfigs) {
-        options.push({ label: "Get IDE prompt (recommended)", value: "prompt" });
+        options.push({ label: "Get prompt (recommended)", value: "prompt" });
         options.push({ label: "Scan workspace (doctor)", value: "doctor" });
       } else {
         options.push({ label: "Scan workspace (recommended)", value: "doctor" });
-        options.push({ label: "Get IDE prompt (prompt)", value: "prompt" });
+        options.push({ label: "Get prompt (prompt)", value: "prompt" });
       }
       break;
 
     case "doctor":
-      options.push({ label: "Get IDE prompt (recommended)", value: "prompt" });
+      options.push({ label: "Get prompt (recommended)", value: "prompt" });
       options.push({ label: "Set up MCP config (init)", value: "init" });
       break;
 
@@ -52,7 +52,7 @@ export function buildNextActions(context: NextActionContext): ActionOption[] {
     default:
       options.push({ label: "Set up MCP config (init)", value: "init" });
       options.push({ label: "Scan workspace (doctor)", value: "doctor" });
-      options.push({ label: "Get IDE prompt (prompt)", value: "prompt" });
+      options.push({ label: "Get prompt (prompt)", value: "prompt" });
       break;
   }
 

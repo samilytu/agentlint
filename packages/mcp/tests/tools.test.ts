@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { describe, expect, it } from "vitest";
 import { createAgentLintMcpServer } from "../src/index.js";
 import {
   buildGuidelines,
@@ -35,7 +36,7 @@ describe("MCP tools - core function integration", () => {
     const result = runQuickCheck(["package.json"]);
     expect(result.markdown).toContain("# Quick Check Results");
     expect(result.signals.length).toBeGreaterThan(0);
-    expect(result.signals[0].trigger).toContain("package.json");
+    expect(result.signals[0].trigger).toContain("Package manifest");
   });
 
   it("quick-check tool: returns no signals for empty input", () => {
@@ -45,7 +46,7 @@ describe("MCP tools - core function integration", () => {
   });
 
   it("maintenance-snippet tool: returns snippet for each client", () => {
-    const clients = ["cursor", "windsurf", "vscode", "claude-code", "generic"] as const;
+    const clients = ["cursor", "windsurf", "vscode", "claude-desktop", "claude-code", "generic"] as const;
 
     for (const client of clients) {
       const result = buildMaintenanceSnippet(client);
@@ -68,7 +69,7 @@ describe("MCP server creation", () => {
   it("creates server with default options", () => {
     const server = createAgentLintMcpServer();
     expect(server).toBeTruthy();
-    const internals = server as {
+    const internals = server as unknown as {
       _registeredTools?: Record<string, unknown>;
       server?: { _serverInfo?: { version?: string } };
     };

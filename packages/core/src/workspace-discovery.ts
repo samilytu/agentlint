@@ -6,6 +6,7 @@ import {
   type ArtifactType,
   getArtifactPathHints,
   getArtifactDiscoveryPatterns,
+  parseArtifactContent,
 } from "@agent-lint/shared";
 
 export type DiscoveredArtifact = {
@@ -79,50 +80,181 @@ const MAX_FILES = 200;
 const MAX_DEPTH = 6;
 const MAX_FILE_SIZE = 500_000;
 
-const REQUIRED_SECTIONS: Record<ArtifactType, string[]> = {
+type SectionRequirement = {
+  name: string;
+  headingAliases: readonly RegExp[];
+  frontmatterAliases?: readonly RegExp[];
+  bodyAliases?: readonly RegExp[];
+};
+
+const REQUIRED_SECTIONS: Record<ArtifactType, readonly SectionRequirement[]> = {
   agents: [
-    "quick commands",
-    "repo map",
-    "working rules",
-    "verification",
-    "security",
-    "do not",
+    {
+      name: "quick commands",
+      headingAliases: [/\bquick commands?\b/, /\bcommand examples?\b/],
+    },
+    {
+      name: "repo map",
+      headingAliases: [
+        /\brepo map\b/,
+        /\brepository specific notes\b/,
+        /\brepository notes\b/,
+        /\brepo structure\b/,
+        /\bproject structure\b/,
+      ],
+    },
+    {
+      name: "working rules",
+      headingAliases: [
+        /\bworking rules\b/,
+        /\bchange protocol\b/,
+        /\btooling policy\b/,
+        /\boperating mode\b/,
+        /\binput handling\b/,
+      ],
+    },
+    {
+      name: "verification",
+      headingAliases: [
+        /\bverification\b/,
+        /\bverification checklist\b/,
+        /\bverification commands?\b/,
+        /\bdefinition of done\b/,
+      ],
+    },
+    {
+      name: "security",
+      headingAliases: [
+        /\bsecurity\b/,
+        /\bsafety boundaries\b/,
+        /\binjection resistance\b/,
+        /\bsecret hygiene\b/,
+      ],
+    },
+    {
+      name: "do not",
+      headingAliases: [
+        /\bdo not\b/,
+        /\bnon goals\b/,
+        /\bout of scope\b/,
+      ],
+      bodyAliases: [/\bforbidden\b/, /\bdo not\b/],
+    },
   ],
   skills: [
-    "purpose",
-    "scope",
-    "inputs",
-    "step",
-    "verification",
-    "safety",
+    {
+      name: "purpose",
+      headingAliases: [/\bpurpose\b/, /\bintent\b/],
+    },
+    {
+      name: "scope",
+      headingAliases: [/\bscope\b/, /\bactivation conditions\b/],
+      frontmatterAliases: [/\bscope\b/],
+    },
+    {
+      name: "inputs",
+      headingAliases: [/\binputs?\b/],
+      frontmatterAliases: [/\binput types\b/],
+    },
+    {
+      name: "step",
+      headingAliases: [/\bstep\b/, /\bprocedure\b/, /\bexecution\b/, /\bworkflow\b/],
+    },
+    {
+      name: "verification",
+      headingAliases: [/\bverification\b/, /\bcompletion criteria\b/],
+    },
+    {
+      name: "safety",
+      headingAliases: [/\bsafety\b/, /\bguardrails\b/, /\bsafety examples\b/],
+      frontmatterAliases: [/\bsafety tier\b/],
+    },
   ],
   rules: [
-    "scope",
-    "do",
-    "don't",
-    "verification",
-    "security",
+    {
+      name: "scope",
+      headingAliases: [/\bscope\b/, /\bin scope\b/, /\bout of scope\b/],
+      frontmatterAliases: [/\bscope\b/, /\bactivation mode\b/],
+    },
+    {
+      name: "do",
+      headingAliases: [/^do$/, /\brequired workflow\b/, /\brequired behavior\b/],
+    },
+    {
+      name: "don't",
+      headingAliases: [/\bdon t\b/, /\bdo not\b/],
+    },
+    {
+      name: "verification",
+      headingAliases: [
+        /\bverification\b/,
+        /\bverification commands?\b/,
+        /\breview checklist\b/,
+        /\bevidence format\b/,
+      ],
+    },
+    {
+      name: "security",
+      headingAliases: [/\bsecurity\b/, /\bguardrails\b/],
+    },
   ],
   workflows: [
-    "goal",
-    "preconditions",
-    "step",
-    "failure",
-    "verification",
-    "safety",
+    {
+      name: "goal",
+      headingAliases: [/\bgoal\b/, /\bpurpose\b/],
+    },
+    {
+      name: "preconditions",
+      headingAliases: [/\bpreconditions\b/, /\binputs?\b/],
+    },
+    {
+      name: "step",
+      headingAliases: [/\bsteps?\b/, /\bordered steps\b/, /\bprocedure\b/],
+    },
+    {
+      name: "failure",
+      headingAliases: [/\bfailure\b/, /\bfailure handling\b/, /\bfailure modes\b/],
+    },
+    {
+      name: "verification",
+      headingAliases: [/\bverification\b/, /\bverification commands?\b/, /\bquality gates\b/],
+    },
+    {
+      name: "safety",
+      headingAliases: [/\bsafety\b/, /\bsafety checks?\b/, /\bguardrails\b/],
+    },
   ],
   plans: [
-    "scope",
-    "non-goals",
-    "risk",
-    "phase",
-    "verification",
-    "evidence",
+    {
+      name: "scope",
+      headingAliases: [/\bscope\b/, /\bobjective\b/, /\bscope and goals\b/, /\bgoals?\b/],
+    },
+    {
+      name: "non-goals",
+      headingAliases: [/\bnon goals\b/, /\bout of scope\b/],
+      bodyAliases: [/\bout of scope\b/],
+    },
+    {
+      name: "risk",
+      headingAliases: [/\brisk\b/, /\brisks and mitigations\b/, /\brisks and dependencies\b/],
+    },
+    {
+      name: "phase",
+      headingAliases: [/\bphases?\b/, /\btimeline\b/],
+    },
+    {
+      name: "verification",
+      headingAliases: [/\bverification\b/, /\bverification strategy\b/, /\bacceptance criteria\b/],
+    },
+    {
+      name: "evidence",
+      headingAliases: [/\bdelivery evidence\b/, /\bdone definition\b/, /\bsuccess criteria\b/, /\bhandoff\b/],
+    },
   ],
 };
 
-const CANONICAL_MATCHERS: ArtifactMatcher[] = artifactTypeValues.flatMap((type) =>
-  getArtifactDiscoveryPatterns(type, "canonical").map((pattern) => ({
+const CANONICAL_MATCHERS: ArtifactMatcher[] = artifactTypeValues.flatMap((type: ArtifactType) =>
+  getArtifactDiscoveryPatterns(type, "canonical").map((pattern: string) => ({
     type,
     regex: globToRegExp(pattern),
   })),
@@ -179,6 +311,57 @@ function isArtifactExtension(filePath: string): boolean {
   return ARTIFACT_EXTENSIONS.has(path.extname(filePath).toLowerCase());
 }
 
+function normalizeText(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[`*_]/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function extractHeadingTokens(body: string): string[] {
+  const headings: string[] = [];
+  const matches = body.matchAll(/^\s{0,3}#{1,6}\s+(.+?)\s*$/gmu);
+
+  for (const match of matches) {
+    const heading = match[1]?.trim();
+    if (heading) {
+      headings.push(normalizeText(heading));
+    }
+  }
+
+  return headings;
+}
+
+function extractFrontmatterKeys(frontmatter: Record<string, unknown> | null): string[] {
+  return Object.keys(frontmatter ?? {}).map((key) => normalizeText(key));
+}
+
+function hasAliasMatch(values: readonly string[], aliases: readonly RegExp[] | undefined): boolean {
+  if (!aliases || aliases.length === 0) {
+    return false;
+  }
+
+  return values.some((value) => aliases.some((alias) => alias.test(value)));
+}
+
+function requirementIsSatisfied(
+  requirement: SectionRequirement,
+  headings: readonly string[],
+  frontmatterKeys: readonly string[],
+  bodyText: string,
+): boolean {
+  if (hasAliasMatch(headings, requirement.headingAliases)) {
+    return true;
+  }
+
+  if (hasAliasMatch(frontmatterKeys, requirement.frontmatterAliases)) {
+    return true;
+  }
+
+  return requirement.bodyAliases?.some((alias) => alias.test(bodyText)) ?? false;
+}
+
 function matchArtifactType(relativePath: string): ArtifactType | null {
   for (const matcher of CANONICAL_MATCHERS) {
     if (matcher.regex.test(relativePath)) {
@@ -193,9 +376,15 @@ function findMissingSections(
   content: string,
   type: ArtifactType,
 ): string[] {
-  const lowerContent = content.toLowerCase();
+  const parsed = parseArtifactContent(content);
+  const headings = extractHeadingTokens(parsed.body);
+  const frontmatterKeys = extractFrontmatterKeys(parsed.frontmatter);
+  const bodyText = normalizeText(parsed.body);
   const required = REQUIRED_SECTIONS[type];
-  return required.filter((section) => !lowerContent.includes(section));
+
+  return required
+    .filter((requirement) => !requirementIsSatisfied(requirement, headings, frontmatterKeys, bodyText))
+    .map((requirement) => requirement.name);
 }
 
 function collectCandidateFiles(
@@ -252,7 +441,7 @@ function collectCandidateFiles(
 
 function findSuggestedPath(type: ArtifactType, rootPath: string): string {
   const canonicalHints = getArtifactPathHints(type).filter(
-    (hint) => hint.discoveryTier === "canonical",
+    (hint: (ReturnType<typeof getArtifactPathHints>)[number]) => hint.discoveryTier === "canonical",
   );
 
   for (const hint of canonicalHints) {

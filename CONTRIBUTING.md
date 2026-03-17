@@ -12,7 +12,7 @@ Agent Lint is a strict TypeScript monorepo for keeping coding-agent context arti
 ## Development Setup
 
 ```bash
-git clone https://github.com/samilytu/agentlint.git
+git clone https://github.com/samilozturk/agentlint.git
 cd agentlint
 pnpm install
 ```
@@ -112,7 +112,7 @@ For a new MCP tool or resource:
 
 ## Issues and Discussions
 
-- Public docs and issue tracking: [GitHub](https://github.com/samilytu/agentlint)
+- Public docs and issue tracking: [GitHub](https://github.com/samilozturk/agentlint)
 - Authoritative publish pipeline: [GitLab](https://gitlab.com/bsamilozturk/agentlint)
 
 ## License

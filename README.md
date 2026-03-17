@@ -4,17 +4,17 @@
 
 Bad context = bad code.
 
-Keep `AGENTS.md`, rules, and skills structured, current, and codebase-aware.
+Keep `AGENTS.md`/`CLAUDE.md`, skills, rules, workflows, and plans well-structured, up to date, and aligned with the codebase.
 
-Agent Lint helps coding agents maintain the files that shape how they work: `AGENTS.md`, `CLAUDE.md`, rules, skills, workflows, and plans. It stays local, does not call an LLM, and keeps the MCP server read-only. The CLI can write MCP client config when you run `init`; repository edits still belong to the client agent.
+Agent Lint helps coding agents maintain the files that shape how they work: `AGENTS.md`/`CLAUDE.md`, skills, rules, workflows, and plans. The CLI can automatically add MCP client config when you run `init`. Once initialized, Agent Lint keeps your context files sharp and current through MCP and maintenance rules.
 
-[CLI on npm](https://www.npmjs.com/package/@agent-lint/cli) | [MCP on npm](https://www.npmjs.com/package/@agent-lint/mcp) | [GitHub](https://github.com/samilytu/agentlint) | [GitLab](https://gitlab.com/bsamilozturk/agentlint)
+[CLI on npm](https://www.npmjs.com/package/@agent-lint/cli) | [MCP on npm](https://www.npmjs.com/package/@agent-lint/mcp) | [GitHub](https://github.com/samilozturk/agentlint) | [GitLab](https://gitlab.com/bsamilozturk/agentlint)
 
 ![Agent Lint doctor demo](docs/screenshots/demo-doctor.svg)
 
 ## The Problem
 
-Your `AGENTS.md`, `CLAUDE.md`, rules, and skills files are the operating system of your coding agent. They shape how the agent plans, writes code, and makes decisions.
+Your `AGENTS.md`, `CLAUDE.md`, skills, rules, workflows, and plans are the operating system of your coding agent. They shape how the agent plans, writes code, and makes decisions.
 
 Without a standard, agent context files drift fast:
 
@@ -85,9 +85,10 @@ Direct MCP only:
 ```bash
 npx -y @agent-lint/mcp
 ```
-## Prompt Your Agent, Not the Tools
 
-Once Agent Lint is connected, most coding agents can infer when to use it from a plain-English prompt.
+## Let Your Agent Drive the Work
+
+Once Agent Lint is connected, most coding agents can infer when to use it from a natural language prompt.
 
 ```text
 agent-lint init  ->  agent-lint doctor  ->  agent-lint prompt
@@ -96,13 +97,20 @@ connect MCP          scan workspace         hand off into IDE chat
 
 Try prompts like:
 
-- `Review this repo's agent context files, fix anything stale or missing, and apply the changes directly.`
+- `Review this repo's agent context files, fix anything stale or missing, and apply safe context-artifact updates directly.`
 - `I changed module structure and CI config. Update only the context files affected by those changes.`
 - `Add a persistent maintenance rule so AGENTS.md, rules, skills, workflows, and plans stay current after future structural changes.`
 
 In practice, this lets the agent scan the workspace, use the right guidance before editing, and add ongoing maintenance rules where supported.
 
-If the client has rules or instruction files, the maintenance snippet can go there. Otherwise, the same behavior can be appended to `AGENTS.md` or `CLAUDE.md`.
+**Environment-Aware Context Targeting**
+
+By default, Agent Lint anchors your context in the industry-standard `AGENTS.md`. However, it natively detects your active IDE and automatically routes maintenance rules to the optimal location:
+
+- **`AGENTS.md`**: The universal standard and default target for most coding agents.
+- **`CLAUDE.md`**: Preferred and targeted automatically for Claude-family clients.
+- **Managed Rule Files**: Specifically optimized for Cursor and Windsurf workflows.
+- **`.github/copilot-instructions.md`**: Seamlessly appended with a maintenance block for VS Code / GitHub Copilot users.
 
 ## What You Get
 
@@ -121,7 +129,7 @@ If the client has rules or instruction files, the maintenance snippet can go the
 | `agentlint_get_guidelines` | Return artifact-specific guidance before creating or updating context files |
 | `agentlint_plan_workspace_autofix` | Scan a workspace and return a step-by-step fix plan |
 | `agentlint_quick_check` | Check whether recent code changes require context updates |
-| `agentlint_emit_maintenance_snippet` | Return a persistent rules snippet for ongoing context hygiene |
+| `agentlint_emit_maintenance_snippet` | Return a reusable maintenance snippet for managed client files or `AGENTS.md` / `CLAUDE.md` fallbacks |
 
 ### MCP resources
 
@@ -139,13 +147,16 @@ If the client has rules or instruction files, the maintenance snippet can go the
   <kbd>Claude Code</kbd>
   <kbd>Codex</kbd>
   <kbd>Cursor</kbd>
-  <kbd>Windsurf</kbd>
   <kbd>OpenCode</kbd>
-  <kbd>VS Code</kbd>
+  <kbd>Windsurf</kbd>
   <kbd>Claude Desktop</kbd>
+  <kbd>VS Code</kbd>
+  <kbd>Kilo Code</kbd>
   <kbd>Cline</kbd>
+  <kbd>Roo Code</kbd>
   <kbd>Kiro</kbd>
   <kbd>Zed</kbd>
+  <kbd>Antigravity</kbd>
 </p>
 
 For exact formats and scope support, see:

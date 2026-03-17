@@ -19,6 +19,7 @@ export const mcpClientValues = [
   "cursor",
   "windsurf",
   "vscode",
+  "claude-desktop",
   "claude-code",
   "generic",
 ] as const;

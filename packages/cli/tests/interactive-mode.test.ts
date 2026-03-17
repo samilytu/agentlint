@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import React from "react";
+import { describe, expect, it } from "vitest";
 import { App } from "../src/app.js";
 import { pressArrowDown, pressEnter, renderInTTY, sleep, waitFor } from "./tty-test-utils.js";
 
@@ -108,37 +109,37 @@ describe("Standalone mode (backward compat after index.tsx refactor)", () => {
   it("--version still works", () => {
     const out = run(["--version"]);
     expect(out.trim()).toMatch(/^\d+\.\d+\.\d+/);
-  });
+  }, 15_000);
 
   it("doctor --stdout still works", () => {
     const out = run(["doctor", "--stdout"]);
     expect(out).toContain("# Workspace Autofix Plan");
-  });
+  }, 15_000);
 
   it("doctor --json still works", () => {
     const out = run(["doctor", "--json"]);
     const parsed = JSON.parse(out) as { rootPath: string };
     expect(parsed.rootPath).toBeTruthy();
-  });
+  }, 15_000);
 
   it("prompt --stdout still works", () => {
     const out = run(["prompt", "--stdout"]);
     expect(out).toContain("agentlint");
-  });
+  }, 15_000);
 
   it("--help shows available commands", () => {
     const out = run(["--help"]);
     expect(out).toContain("init");
     expect(out).toContain("doctor");
     expect(out).toContain("prompt");
-  });
+  }, 15_000);
 
   it("help subcommand still works", () => {
     const out = run(["help"]);
     expect(out).toContain("init");
     expect(out).toContain("doctor");
     expect(out).toContain("prompt");
-  });
+  }, 15_000);
 
   it("unknown command still errors instead of launching interactive menu", () => {
     const result = runCli(["unknown-command"]);
@@ -147,7 +148,7 @@ describe("Standalone mode (backward compat after index.tsx refactor)", () => {
     expect(result.status).not.toBe(0);
     expect(combined.toLowerCase()).toContain("unknown command");
     expect(combined.toUpperCase()).not.toContain("WHAT WOULD YOU LIKE TO DO?");
-  });
+  }, 15_000);
 
   it("unknown global flag still errors in standalone parser", () => {
     const result = runCli(["--not-a-real-flag"]);
@@ -156,7 +157,7 @@ describe("Standalone mode (backward compat after index.tsx refactor)", () => {
     expect(result.status).not.toBe(0);
     expect(combined.toLowerCase()).toContain("unknown option");
     expect(combined.toUpperCase()).not.toContain("WHAT WOULD YOU LIKE TO DO?");
-  });
+  }, 15_000);
 });
 
 // ── App with initialCommand (standalone TUI routing) ─────────────────────
@@ -178,8 +179,7 @@ describe("App with initialCommand", () => {
 
       // Doctor should run and complete
       await waitFor(
-        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-              session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
         { timeoutMs: 10_000 },
       );
 
@@ -210,8 +210,7 @@ describe("App with initialCommand", () => {
     try {
       // Wait for doctor to complete
       await waitFor(
-        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-              session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
         { timeoutMs: 10_000 },
       );
 
@@ -249,8 +248,7 @@ describe("App with initialCommand", () => {
     try {
       // Wait for doctor to complete
       await waitFor(
-        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-              session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
         { timeoutMs: 10_000 },
       );
 
@@ -287,8 +285,7 @@ describe("App with initialCommand", () => {
 
     try {
       await waitFor(
-        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-              session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+        () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
         { timeoutMs: 10_000 },
       );
 

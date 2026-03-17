@@ -168,7 +168,8 @@ export function buildWorkspaceAutofixPlan(
     "1. For each step, read the referenced file (if it exists).",
     "2. Call `agentlint_get_guidelines` for the artifact type to get the full specification.",
     "3. If you need to scan the codebase for project-specific information (tech stack, scripts, etc.), do so before writing.",
-    "4. Apply the changes directly using your file editing capabilities.",
+    "4. Apply safe context-artifact changes directly unless the user explicitly wants a different outcome or the host approval model requires a gate.",
+    "5. Tell the user when Agent Lint guidance triggered or shaped the update.",
   ];
 
   return {

@@ -16,7 +16,7 @@ function githubRemoteUrl() {
   }
 
   const repository =
-    process.env.GITHUB_MIRROR_REPOSITORY ?? "samilytu/agentlint";
+    process.env.GITHUB_MIRROR_REPOSITORY ?? "samilozturk/agentlint";
   return `https://x-access-token:${encodeURIComponent(token)}@github.com/${repository}.git`;
 }
 

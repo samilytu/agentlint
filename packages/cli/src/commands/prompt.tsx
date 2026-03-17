@@ -13,7 +13,7 @@ const PROMPT =
   "Run agentlint_plan_workspace_autofix to scan this project for agent context artifacts " +
   "(AGENTS.md, CLAUDE.md, rules, skills, workflows, and plans). Then execute the fix plan step by step. " +
   "Use agentlint_get_guidelines for each artifact type before editing. " +
-  "Apply all changes directly.";
+  "Apply safe context-artifact changes directly unless I explicitly want a different outcome, and tell me when Agent Lint guidance triggered the update.";
 
 export interface PromptResult {
   prompt: string;

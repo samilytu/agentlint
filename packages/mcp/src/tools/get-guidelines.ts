@@ -15,7 +15,7 @@ export function registerGetGuidelinesTool(server: McpServer): void {
     {
       title: "Get Guidelines",
       description:
-        "Returns comprehensive Markdown guidelines for creating or updating a context artifact (AGENTS.md, skills, rules, workflows, plans). " +
+        "Returns comprehensive Markdown guidelines for creating or updating a context artifact (AGENTS.md, CLAUDE.md, skills, rules, workflows, plans). " +
         "Includes mandatory sections, do/don't lists, anti-patterns, quality checklist, template skeleton, and client-specific hints. " +
         "Call this tool before creating or editing any AI agent context artifact file.",
       inputSchema: asInputSchema(getGuidelinesInputSchema),

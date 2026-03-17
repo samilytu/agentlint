@@ -102,7 +102,7 @@ function buildQualityChecklist(): string {
     "",
     "Verify your artifact against each of these dimensions:",
     "",
-    ...metrics.map((m) => `- **${m.id}**: ${m.guidance}`),
+    ...metrics.map((m: (typeof metrics)[number]) => `- **${m.id}**: ${m.guidance}`),
   ].join("\n");
 }
 

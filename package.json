@@ -8,7 +8,7 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release-status": "node scripts/release-status.mjs",
-    "typecheck": "tsc --build",
+    "typecheck": "tsc --build --force",
     "typecheck:shared": "tsc --noEmit --project packages/shared/tsconfig.json",
     "typecheck:core": "tsc --noEmit --project packages/core/tsconfig.json",
     "typecheck:mcp": "tsc --noEmit --project packages/mcp/tsconfig.json",

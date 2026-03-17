@@ -287,8 +287,6 @@ function sceneDoctor() {
     renderSuccessItem("skills/api-route-review/SKILL.md (skills)"),
     renderSuccessItem("docs/workflows/vercel-preview-checks.md (workflows)"),
     renderSuccessItem("docs/plans/auth-and-billing-rollout.md (plans)"),
-    renderSectionTitle("Report saved"),
-    renderInfoItem(".agentlint-report.md"),
     renderNextStep("Run agent-lint prompt to get a ready-to-paste prompt for your IDE."),
     "",
   ].join("\n");
@@ -367,7 +365,16 @@ const scenes = [
   { file: "demo-help", render: sceneHelp },
 ];
 
-for (const scene of scenes) {
+const requestedScenes = new Set(process.argv.slice(2));
+const scenesToRender = requestedScenes.size === 0
+  ? scenes
+  : scenes.filter((scene) => requestedScenes.has(scene.file));
+
+if (requestedScenes.size > 0 && scenesToRender.length === 0) {
+  throw new Error(`No matching scenes found for: ${[...requestedScenes].join(", ")}`);
+}
+
+for (const scene of scenesToRender) {
   const ansi = scene.render();
   for (const ext of ["png", "svg"]) {
     const outputPath = path.join(outputDir, `${scene.file}.${ext}`);

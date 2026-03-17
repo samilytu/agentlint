@@ -8,7 +8,7 @@ description: Agent Lint context maintenance rules
 
 # Activation
 
-- Always active for this workspace.
+- Always active for this workspace or instruction file when the host client loads it.
 
 # Do
 
@@ -18,7 +18,8 @@ description: Agent Lint context maintenance rules
 - For targeted structural changes, call `agentlint_quick_check` with changed paths and/or a short change description.
 - Before creating or updating any context artifact, call `agentlint_get_guidelines` for that artifact type.
 - When ongoing upkeep is requested, use `agentlint_emit_maintenance_snippet` where supported or append equivalent maintenance instructions to the main project context file.
-- Apply recommended context artifact changes directly once Agent Lint has identified what to update.
+- Apply recommended context artifact changes directly once Agent Lint has identified what to update, unless the user explicitly asks for a different maintenance outcome.
+- Tell the user when an update was triggered or shaped by Agent Lint maintenance guidance.
 - Keep context artifact files concise and reference docs instead of duplicating them.
 
 # Don't
@@ -26,7 +27,8 @@ description: Agent Lint context maintenance rules
 - Do not edit context artifacts from repo guesses alone; scan the codebase first.
 - Do not duplicate README or package README prose inside AGENTS, rules, skills, workflows, or plans.
 - Do not leave placeholder sections, TODO text, or stale paths in maintained artifacts.
-- Do not wait for confirmation after Agent Lint has identified safe context-file fixes unless the change would be destructive outside context artifacts.
+- Do not expand this maintenance policy to unrelated code or docs outside context artifacts unless the user explicitly asks.
+- Do not wait for confirmation after Agent Lint has identified safe context-file fixes unless the user asked for a different outcome or the host approval model requires a gate.
 
 # Verification
 

@@ -6,6 +6,7 @@ import {
   MCP_TOOL_NAMES,
   mcpClientValues,
 } from "@agent-lint/shared";
+import { describe, expect, it } from "vitest";
 
 describe("schemas", () => {
   describe("MCP_TOOL_NAMES", () => {
@@ -25,6 +26,7 @@ describe("schemas", () => {
       expect(mcpClientValues).toContain("cursor");
       expect(mcpClientValues).toContain("windsurf");
       expect(mcpClientValues).toContain("vscode");
+      expect(mcpClientValues).toContain("claude-desktop");
       expect(mcpClientValues).toContain("claude-code");
       expect(mcpClientValues).toContain("generic");
     });

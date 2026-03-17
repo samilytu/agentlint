@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import React from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DoctorApp } from "../src/commands/doctor.js";
 import { InitWizard } from "../src/commands/init.js";
 import { PromptApp } from "../src/commands/prompt.js";
@@ -46,8 +47,7 @@ describe("Embedded command flows", () => {
 
       try {
         await waitFor(
-          () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS") ||
-                session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+          () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
           { timeoutMs: 5_000 },
         );
 
@@ -65,7 +65,7 @@ describe("Embedded command flows", () => {
     });
   });
 
-  it("renders readable missing artifact entries instead of object strings", async () => {
+  it("does not render missing artifact entries in the doctor TUI", async () => {
     await withTempCwd(async () => {
       fs.writeFileSync(path.join(process.cwd(), "AGENTS.md"), "# AGENTS\n");
 
@@ -76,14 +76,15 @@ describe("Embedded command flows", () => {
 
       try {
         await waitFor(
-          () => session.getStdout().toUpperCase().includes("MISSING ARTIFACT TYPES"),
+          () => session.getStdout().toUpperCase().includes("DISCOVERED ARTIFACTS"),
           { timeoutMs: 5_000 },
         );
 
         const output = session.getStdout();
-        expect(output).not.toContain("[object Object]");
-        expect(output).toContain("skills ->");
-        expect(output).toContain("workflows ->");
+        expect(output).toContain("AGENTS.md (agents)");
+        expect(output).not.toContain("MISSING ARTIFACT TYPES");
+        expect(output).not.toContain("skills ->");
+        expect(output).not.toContain("workflows ->");
       } finally {
         session.cleanup();
       }
@@ -147,7 +148,9 @@ describe("Embedded command flows", () => {
 
         await sleep(350);
         expect(onComplete).not.toHaveBeenCalled();
-        expect(session.getStdout()).toContain("Apply all changes directly.");
+        expect(session.getStdout().replace(/\s+/g, " ")).toContain(
+          "Apply safe context-artifact changes directly unless I explicitly",
+        );
 
         pressEnter(session.stdin);
 

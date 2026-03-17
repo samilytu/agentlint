@@ -11,115 +11,128 @@ export type QuickCheckResult = {
   markdown: string;
 };
 
-const PATH_SIGNALS: Array<{
-  test: (p: string) => boolean;
+type SignalRule = {
+  test: (value: string) => boolean;
   trigger: string;
   affectedArtifacts: string[];
   action: string;
-}> = [
+};
+
+function normalizeChangedPath(input: string): string {
+  return input.replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+function isDirectoryLikePath(input: string): boolean {
+  const normalized = normalizeChangedPath(input).replace(/\/$/, "");
+  const base = path.posix.basename(normalized);
+  return normalized.includes("/") && normalized.length > 0 && !base.includes(".");
+}
+
+const PATH_SIGNALS: readonly SignalRule[] = [
   {
-    test: (p) => /package\.json$/i.test(p),
-    trigger: "package.json changed",
+    test: (p) => /(^|\/)(package\.json|pnpm-lock\.ya?ml|package-lock\.json|yarn\.lock)$/i.test(p),
+    trigger: "Package manifest or lockfile changed",
     affectedArtifacts: ["agents", "rules"],
     action:
-      "Update Quick Commands section in AGENTS.md if scripts changed. Update rules if new dependencies require constraints.",
+      "Review quick commands, dependency constraints, and maintenance rules. If the change affects repository structure or tooling, run `agentlint_quick_check` first and then use `agentlint_get_guidelines` for the affected artifact types.",
   },
   {
-    test: (p) => /tsconfig/i.test(p),
-    trigger: "TypeScript config changed",
+    test: (p) => /(tsconfig|vitest\.config|eslint|prettier|turbo\.json|pnpm-workspace\.yaml|components\.json)$/i.test(p),
+    trigger: "Build, lint, or workspace config changed",
     affectedArtifacts: ["agents", "rules"],
-    action: "Review verification commands and TypeScript-specific rules for alignment.",
+    action:
+      "Review verification commands, tooling notes, and rule constraints so context artifacts still match the live repository configuration.",
   },
   {
     test: (p) =>
-      /\.(github|gitlab)\/.*\.(yml|yaml)$/i.test(p) || /\.circleci/i.test(p),
-    trigger: "CI/CD configuration changed",
-    affectedArtifacts: ["agents", "workflows"],
+      /(^|\/)(\.github\/workflows\/.*\.(yml|yaml)|\.gitlab-ci\.ya?ml|\.circleci\/|PUBLISH\.md|CONTRIBUTING\.md)$/i.test(p),
+    trigger: "CI, release, or contribution flow changed",
+    affectedArtifacts: ["agents", "workflows", "plans"],
     action:
-      "Update verification steps in AGENTS.md. Review workflow artifacts for new CI pipeline alignment.",
-  },
-  {
-    test: (p) => /dockerfile|docker-compose|\.dockerignore/i.test(p),
-    trigger: "Docker configuration changed",
-    affectedArtifacts: ["agents", "workflows"],
-    action:
-      "Update deployment-related commands in AGENTS.md and workflow artifacts.",
-  },
-  {
-    test: (p) => /\.env/i.test(p) && !/\.env\.example/i.test(p),
-    trigger: "Environment file changed",
-    affectedArtifacts: ["agents", "rules"],
-    action:
-      "Verify security boundaries in AGENTS.md. Ensure rules prohibit secret hardcoding.",
+      "Review verification steps, release workflows, and planning docs for stale commands, changed release flow, or new process constraints.",
   },
   {
     test: (p) => {
-      const dir = path.dirname(p).replace(/\\/g, "/");
-      const parts = dir.split("/").filter(Boolean);
-      return parts.length >= 2 && !parts.some((d) => d === "node_modules");
+      const normalized = normalizeChangedPath(p);
+      const base = path.posix.basename(normalized);
+      if (/^\.env(?:\.|$)/i.test(base) && !/^\.env\.example$/i.test(base)) {
+        return true;
+      }
+
+      return /(^|\/)(security|auth|permissions?)(\/|$)/i.test(normalized);
     },
-    trigger: "New directory or module structure",
-    affectedArtifacts: ["agents"],
+    trigger: "Security-sensitive path changed",
+    affectedArtifacts: ["agents", "rules"],
     action:
-      "Update the Repo Map section in AGENTS.md to reflect the new directory structure.",
+      "Review security boundaries and maintenance rules to ensure the updated behavior, secrets policy, and refusal boundaries remain accurate.",
   },
   {
     test: (p) =>
-      /\.(cursor|windsurf|claude|vscode)\//i.test(p.replace(/\\/g, "/")),
-    trigger: "IDE config changed",
-    affectedArtifacts: ["rules"],
+      /(^|\/)(AGENTS\.md|CLAUDE\.md|\.cursor\/rules\/|\.windsurf\/rules\/|\.github\/copilot-instructions\.md|\.claude\/commands\/|\.codex\/rules\/)/i.test(p),
+    trigger: "Context artifact or client instruction file changed",
+    affectedArtifacts: ["agents", "rules", "workflows", "plans"],
     action:
-      "Review rules artifacts to ensure they align with updated IDE configuration.",
+      "Treat this as active context maintenance work. Re-check related artifacts for drift, and tell the user if an update was driven by Agent Lint guidance.",
   },
   {
-    test: (p) => /readme\.md$/i.test(p),
-    trigger: "README changed",
-    affectedArtifacts: ["agents"],
+    test: (p) =>
+      /packages\/(cli\/src\/commands\/clients\.ts|cli\/src\/commands\/maintenance-writer\.ts|mcp\/src\/catalog\.ts|mcp\/src\/server\.ts|core\/src\/maintenance-snippet\.ts)$/i.test(p),
+    trigger: "Agent Lint public maintenance surface changed",
+    affectedArtifacts: ["agents", "rules", "plans"],
     action:
-      "Check AGENTS.md is not duplicating README content. Update references if needed.",
+      "Review root guidance, managed maintenance artifacts, and public docs/tests together so clients, prompts, and instructions stay aligned.",
+  },
+  {
+    test: (p) => isDirectoryLikePath(p),
+    trigger: "Directory or module boundary changed",
+    affectedArtifacts: ["agents", "plans"],
+    action:
+      "Review repo map, package-level overlays, and planning artifacts for stale structure descriptions or missing new-module guidance.",
   },
 ];
 
-const DESCRIPTION_SIGNALS: Array<{
-  test: (d: string) => boolean;
-  trigger: string;
-  affectedArtifacts: string[];
-  action: string;
-}> = [
+const DESCRIPTION_SIGNALS: readonly SignalRule[] = [
   {
-    test: (d) => /new\b.*\b(module|feature|component|service|package)\b/i.test(d),
-    trigger: "New module/feature added",
+    test: (d) => /new\b.*\b(module|feature|component|service|package|directory)\b/i.test(d),
+    trigger: "New module or feature described",
     affectedArtifacts: ["agents", "plans"],
     action:
-      "Update Repo Map in AGENTS.md. If this is part of an ongoing plan, update plan progress.",
+      "Review repo-map, scope, and plan sections so the new module or feature is reflected in the active context artifacts.",
   },
   {
-    test: (d) => /refactor|restructur|reorganiz/i.test(d),
-    trigger: "Codebase restructuring",
-    affectedArtifacts: ["agents", "rules", "workflows"],
+    test: (d) => /refactor|restructur|reorganiz|rename|move\b/i.test(d),
+    trigger: "Repository restructuring described",
+    affectedArtifacts: ["agents", "rules", "workflows", "plans"],
     action:
-      "Review all context artifacts for stale path references and outdated structure descriptions.",
+      "Treat this as a structural maintenance signal. Check for stale paths, obsolete repo-map entries, and rules that still describe the old layout.",
   },
   {
-    test: (d) => /security|auth|permission|access control/i.test(d),
-    trigger: "Security-related change",
+    test: (d) => /security|auth|permission|access control|secret/i.test(d),
+    trigger: "Security-related change described",
     affectedArtifacts: ["agents", "rules"],
     action:
-      "Update Security Boundaries in AGENTS.md and Security block in rules.",
+      "Review security boundaries, refusal rules, and secret-hygiene language in the affected context artifacts.",
   },
   {
-    test: (d) => /deploy|release|publish/i.test(d),
-    trigger: "Deployment-related change",
-    affectedArtifacts: ["workflows", "plans"],
+    test: (d) => /deploy|release|publish|packaging|distribution/i.test(d),
+    trigger: "Release or deployment change described",
+    affectedArtifacts: ["workflows", "plans", "agents"],
     action:
-      "Review deployment workflows and plan progress for alignment.",
+      "Review release workflows, verification commands, and any plan sections that track release behavior or package outputs.",
   },
   {
-    test: (d) => /depend|upgrade|migrat/i.test(d),
-    trigger: "Dependency change",
+    test: (d) => /depend|upgrade|migrat|tooling|typescript|lint|test/i.test(d),
+    trigger: "Tooling or dependency change described",
     affectedArtifacts: ["agents", "rules"],
     action:
-      "Update Quick Commands if install steps changed. Update rules if new constraints apply.",
+      "Review quick commands, tooling notes, and rule constraints so context artifacts still match the current stack and verification flow.",
+  },
+  {
+    test: (d) => /client|cursor|windsurf|copilot|claude|codex|opencode|kiro|zed/i.test(d),
+    trigger: "Client support or instruction behavior described",
+    affectedArtifacts: ["agents", "rules", "plans"],
+    action:
+      "Review client-specific maintenance instructions, fallback behavior, and docs/tests that describe supported clients.",
   },
 ];
 
@@ -129,11 +142,12 @@ export function runQuickCheck(
 ): QuickCheckResult {
   const signals: QuickCheckSignal[] = [];
   const seen = new Set<string>();
+  const normalizedPaths = changedPaths?.map((changedPath) => normalizeChangedPath(changedPath));
 
-  if (changedPaths) {
-    for (const p of changedPaths) {
+  if (normalizedPaths) {
+    for (const changedPath of normalizedPaths) {
       for (const rule of PATH_SIGNALS) {
-        if (rule.test(p) && !seen.has(rule.trigger)) {
+        if (rule.test(changedPath) && !seen.has(rule.trigger)) {
           seen.add(rule.trigger);
           signals.push({
             trigger: rule.trigger,
@@ -158,7 +172,7 @@ export function runQuickCheck(
     }
   }
 
-  const markdown = buildQuickCheckMarkdown(signals, changedPaths, changeDescription);
+  const markdown = buildQuickCheckMarkdown(signals, normalizedPaths, changeDescription);
 
   return { signals, markdown };
 }
@@ -206,11 +220,17 @@ function buildQuickCheckMarkdown(
   lines.push(
     "---",
     "",
+    "## Agent Lint default guidance",
+    "",
+    "Treat the signals above as the default Agent Lint recommendation for context maintenance.",
+    "If the user explicitly asks for a different context outcome, follow the user and note the override.",
+    "If you update an artifact because of these signals, tell the user the change was prompted by Agent Lint guidance.",
+    "",
     "## Next steps",
     "",
-    "1. Review each signal above and determine if the action applies to your project.",
-    "2. For affected artifact types, call `agentlint_get_guidelines` to get the latest specification.",
-    "3. Apply the changes directly to the artifact files using your file editing capabilities.",
+    "1. If the change looks broad or structural, run `agentlint_plan_workspace_autofix` for a workspace-wide scan.",
+    "2. If the change is targeted, use the signals above to decide which artifact types need `agentlint_get_guidelines` before editing.",
+    "3. Apply safe context-artifact updates directly, but do not expand the work to unrelated code or docs unless the user explicitly asks.",
   );
 
   return lines.join("\n");

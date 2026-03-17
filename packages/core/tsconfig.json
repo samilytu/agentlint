@@ -8,6 +8,10 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@agent-lint/shared": ["../shared/src/index.ts"]
+    },
     "declaration": true,
     "emitDeclarationOnly": true,
     "declarationMap": true,
