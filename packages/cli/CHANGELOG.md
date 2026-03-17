@@ -1,5 +1,11 @@
 # @agent-lint/cli Changelog
 
+## 0.5.2
+
+### Patch Changes
+
+- 8a4cc93: Improve `doctor` and `prompt` maintenance guidance with grouped artifact findings, targeted handoff selection, and updated CLI documentation.
+
 ## 0.5.1
 
 ### Patch Changes
