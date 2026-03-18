@@ -1,6 +1,6 @@
 ---
 name: artifact-quality-auditor
-description: Deterministic auditing skill for AGENTS, rules, skills, workflows, and plans with evidence-backed scoring.
+description: Audits AGENTS, rules, skills, workflows, and plans with evidence-backed scoring. Use when reviewing artifact quality, comparing good vs bad examples, or checking workspace-wide consistency. Trigger on "audit", "artifact quality", "score", "evaluate context".
 disable-model-invocation: true
 activation-mode: on-request
 scope: repository-local
@@ -136,3 +136,9 @@ policy: default-equal-weight
 
 The skill run is complete when scorecard, evidence, and prioritized fixes are all present,
 and each claim is backed by concrete, local artifact content.
+
+## Gotchas
+
+- Nested sample workspaces inside `examples/` are ignored even if they contain AGENTS.md.
+- Files named `README.md` are never treated as artifacts even in canonical locations.
+- `docs/roadmap.md` is only considered a plan if it's in `docs/plans/` subdirectory.

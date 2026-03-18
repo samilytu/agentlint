@@ -182,6 +182,7 @@ When a primary source exists, Agent Lint follows that source first. Community wr
 - [Anthropic Claude Code docs: Best practices](https://docs.claude.com/en/docs/claude-code/best-practices) - concise project instructions, verification loops, and durable project guidance.
 - [Anthropic Claude Code docs: Memory](https://docs.claude.com/en/docs/claude-code/memory) - project memory hierarchy, local overrides, and how durable instructions are loaded.
 - [Claude API docs: Skill authoring best practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices) - progressive disclosure, metadata quality, and skill packaging guidance.
+- [Lessons from Building Claude Code: How We Use Skills](https://x.com/trq212/status/2033949937936085378) - detailed real-world guidance from an Anthropic engineer on skill design and usage.
 - [OpenAI Cookbook: Using PLANS.md for multi-hour problem solving](https://developers.openai.com/cookbook/articles/codex_exec_plans/) - long-running task decomposition and durable planning patterns.
 - [AGENTS.md](https://agents.md/) - the open format and shared vocabulary for repository-level coding-agent guidance.
 - [Windsurf Docs: AGENTS.md](https://docs.windsurf.com/windsurf/cascade/agents-md) - agent instruction file behavior in Windsurf.

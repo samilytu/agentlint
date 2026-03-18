@@ -96,6 +96,13 @@ const PATH_SIGNALS: readonly SignalRule[] = [
       "Treat this as active context maintenance work. Re-check related artifacts for drift, and tell the user if an update was driven by Agent Lint guidance.",
   },
   {
+    test: (p) => /(^|\/)(skills\/|\.claude\/skills\/|\.windsurf\/skills\/)/i.test(p),
+    trigger: "Skill file or directory changed",
+    affectedArtifacts: ["skills", "agents"],
+    action:
+      "Review skill description for trigger keywords, ensure Gotchas section is updated, and check if a large skill needs progressive disclosure (moving details to references/).",
+  },
+  {
     test: (p) =>
       /packages\/(cli\/src\/commands\/clients\.ts|cli\/src\/commands\/maintenance-writer\.ts|cli\/src\/commands\/doctor\.tsx|cli\/src\/commands\/prompt\.tsx|mcp\/src\/catalog\.ts|mcp\/src\/server\.ts|core\/src\/maintenance-snippet\.ts|core\/src\/plan-builder\.ts|core\/src\/workspace-discovery\.ts|core\/src\/quick-check\.ts)$/i.test(p),
     trigger: "Agent Lint public maintenance surface changed",

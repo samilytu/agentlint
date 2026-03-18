@@ -673,6 +673,40 @@ function buildArtifactAnalysis(
     weakSignals.push("mentions CLAUDE.local.md without a matching .gitignore entry");
   }
 
+  if (type === "skills") {
+    const hasGotchas = headings.some((h) => /\bgotchas?\b|\bcaveats?\b/.test(h));
+    if (!hasGotchas) {
+      weakSignals.push("no gotchas section — add real-world failure notes as you encounter them");
+    }
+
+    const description =
+      typeof parsed.frontmatter?.["description"] === "string"
+        ? (parsed.frontmatter["description"] as string)
+        : "";
+    const hasTriggerLanguage =
+      /\btriggers? on\b|\buse when\b|\binvoke when\b|\bactivates? (on|when)\b|\btrigger(ed)? (by|when)\b/i.test(
+        description,
+      );
+    if (description.length > 0 && !hasTriggerLanguage) {
+      weakSignals.push(
+        "description should include trigger language (e.g. 'use when…', 'triggers on…')",
+      );
+    }
+
+    const lineCount = content.split(/\r?\n/).length;
+    if (lineCount > 200) {
+      const skillDir = path.dirname(filePath);
+      const hasSubFolders = ["references", "scripts", "assets", "lib"].some((sub) =>
+        fs.existsSync(path.join(skillDir, sub)),
+      );
+      if (!hasSubFolders) {
+        weakSignals.push(
+          "skill exceeds 200 lines with no references/ or scripts/ sub-folder — consider progressive disclosure",
+        );
+      }
+    }
+  }
+
   return {
     missingSections,
     staleReferences: findStaleReferences(rootPath, filePath, parsed.body),

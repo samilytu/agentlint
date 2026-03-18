@@ -181,6 +181,14 @@ npx prettier --check src/
 - Don't create monolithic components
 - Avoid hardcoded values (use design tokens)
 
+## Gotchas
+
+- `shadcn/ui` components often require manual installation before use (`npx shadcn-ui@latest add <component>`).
+- Tailwind arbitrary values (like `w-[320px]`) can break responsive design if overused.
+- Radix UI Icons (often used with shadcn) have different naming conventions than Lucide React.
+- React Server Components (RSC) limits what can be passed as props (e.g. functions cannot be serialized).
+- Mobile-first approach means base classes are for mobile, `md:` prefix is for tablet/desktop.
+
 ## Verification Checklist
 
 - [ ] TypeScript compiles without errors

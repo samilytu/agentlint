@@ -105,7 +105,10 @@ describe("CLI output modes", () => {
 
   it("prompt --stdout switches to targeted maintenance when canonical artifacts look healthy", () => {
     const out = run(["prompt", "--stdout"], FIXTURE_WORKSPACE);
-    expect(out).toContain("agentlint_quick_check");
+    // When local changes exist, quick-check signals are shown instead of generic agentlint_quick_check
+    const hasQuickCheckSignals = out.includes("Quick-check signals from local changes");
+    const hasGenericQuickCheck = out.includes("agentlint_quick_check");
+    expect(hasQuickCheckSignals || hasGenericQuickCheck).toBe(true);
     expect(out).toContain("Detected context artifacts:");
   });
 
