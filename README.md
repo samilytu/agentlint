@@ -28,7 +28,8 @@ Agent Lint gives your coding agent a repeatable workflow:
 - set up MCP config with `agent-lint init`
 - scan the workspace with `agent-lint doctor`
 - paste a ready-made prompt with `agent-lint prompt`
-- use 4 MCP tools and 3 MCP resources to keep context artifacts aligned with the codebase
+- score any context artifact with `agent-lint score`
+- use 5 MCP tools and 3 MCP resources to keep context artifacts aligned with the codebase
 
 ## Without vs With Agent Lint
 
@@ -72,6 +73,7 @@ This opens an interactive session where you can run the core Agent Lint commands
 * `init` — set up MCP config and optionally install maintenance rules
 * `doctor` — scan the workspace and generate a context maintenance report
 * `prompt` — print a ready-to-paste prompt for your IDE chat
+* `score <file>` — score a context artifact against 12 quality dimensions
 
 Prefer a global install?
 
@@ -121,6 +123,7 @@ By default, Agent Lint anchors your context in the industry-standard `AGENTS.md`
 | `agent-lint init` | Set up Agent Lint MCP config and optionally install maintenance rules |
 | `agent-lint doctor` | Scan the workspace and generate a context maintenance report grouped into missing types, incomplete files, stale, conflicting, and weak findings |
 | `agent-lint prompt` | Print a ready-to-paste IDE prompt that chooses a broad workspace scan or a targeted maintenance handoff using current workspace findings and local change signals when available |
+| `agent-lint score <file>` | Score a context artifact against 12 quality dimensions and print targeted improvement suggestions; artifact type is auto-detected from the filename or set with `--type` |
 
 ### MCP tools
 
