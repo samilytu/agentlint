@@ -73,7 +73,7 @@ describe("MCP server creation", () => {
       _registeredTools?: Record<string, unknown>;
       server?: { _serverInfo?: { version?: string } };
     };
-    expect(Object.keys(internals._registeredTools ?? {})).toHaveLength(4);
+    expect(Object.keys(internals._registeredTools ?? {})).toHaveLength(5);
     expect(internals.server?._serverInfo?.version).toBe(packageJson.version);
   });
 

@@ -30,6 +30,7 @@ export {
   planWorkspaceAutofixInputSchema,
   quickCheckInputSchema,
   emitMaintenanceSnippetInputSchema,
+  scoreArtifactInputSchema,
 } from "./schemas.js";
 export type {
   McpToolName,
@@ -38,4 +39,5 @@ export type {
   PlanWorkspaceAutofixInput,
   QuickCheckInput,
   EmitMaintenanceSnippetInput,
+  ScoreArtifactInput,
 } from "./schemas.js";

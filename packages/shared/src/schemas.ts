@@ -72,3 +72,16 @@ export const emitMaintenanceSnippetInputSchema = z.object({
 });
 
 export type EmitMaintenanceSnippetInput = z.infer<typeof emitMaintenanceSnippetInputSchema>;
+
+export const scoreArtifactInputSchema = z.object({
+  content: z
+    .string()
+    .min(1)
+    .max(50_000)
+    .describe("Full text content of the artifact to score."),
+  type: artifactTypeSchema.describe(
+    "Artifact type: agents, skills, rules, workflows, or plans.",
+  ),
+});
+
+export type ScoreArtifactInput = z.infer<typeof scoreArtifactInputSchema>;

@@ -12,6 +12,7 @@ import { Command } from "commander";
 import { runInitCommand } from "./commands/init.js";
 import { runDoctorCommand } from "./commands/doctor.js";
 import { runPromptCommand } from "./commands/prompt.js";
+import { runScoreCommand } from "./commands/score.js";
 import { redirectLogsToStderr } from "./utils.js";
 import { VERSION } from "./ui/theme.js";
 import { App, type AppProps } from "./app.js";
@@ -116,6 +117,17 @@ function createProgram(): Command {
     .option("--stdout", "Print prompt to stdout instead of TUI")
     .action((options: { stdout?: boolean }) => {
       runPromptCommand(options);
+    });
+
+  program
+    .command("score <file>")
+    .description("Score a context artifact against AgentLint's 12 quality dimensions")
+    .option(
+      "--type <type>",
+      "Artifact type: agents, skills, rules, workflows, or plans (auto-detected from filename if omitted)",
+    )
+    .action((file: string, options: { type?: string }) => {
+      runScoreCommand(file, options);
     });
 
   return program;

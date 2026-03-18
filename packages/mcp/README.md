@@ -22,6 +22,7 @@ npx @agent-lint/cli init
 | `agentlint_plan_workspace_autofix` | Scan a workspace and return a step-by-step fix plan |
 | `agentlint_quick_check` | Decide whether recent code changes require context updates |
 | `agentlint_emit_maintenance_snippet` | Return a reusable maintenance snippet for managed client files or `AGENTS.md` / `CLAUDE.md` fallbacks |
+| `agentlint_score_artifact` | Score a context artifact against 12 quality dimensions and return targeted improvement suggestions for autoresearch loops |
 
 ## Current Resource Surface
 

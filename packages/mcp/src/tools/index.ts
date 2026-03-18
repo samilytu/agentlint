@@ -4,6 +4,7 @@ import { registerGetGuidelinesTool } from "./get-guidelines.js";
 import { registerPlanWorkspaceAutofixTool } from "./plan-workspace-autofix.js";
 import { registerQuickCheckTool } from "./quick-check.js";
 import { registerEmitMaintenanceSnippetTool } from "./emit-maintenance-snippet.js";
+import { registerScoreArtifactTool } from "./score-artifact.js";
 
 export type RegisterAgentLintToolsOptions = {
   enableWorkspaceScan: boolean;
@@ -17,4 +18,5 @@ export function registerAgentLintTools(
   registerPlanWorkspaceAutofixTool(server, { enabled: options.enableWorkspaceScan });
   registerQuickCheckTool(server);
   registerEmitMaintenanceSnippetTool(server);
+  registerScoreArtifactTool(server);
 }

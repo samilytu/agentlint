@@ -17,6 +17,7 @@ const DEFAULT_MCP_INSTRUCTIONS =
     "Call agentlint_plan_workspace_autofix to discover all artifacts in a workspace and get a step-by-step fix plan.",
     "Call agentlint_quick_check after structural changes to check if context artifacts need updating.",
     "Call agentlint_emit_maintenance_snippet to get a persistent rule snippet for continuous context hygiene.",
+    "Call agentlint_score_artifact to score any context artifact against 12 quality dimensions and get targeted improvement suggestions for autoresearch loops.",
     "Apply safe context-artifact changes directly using your file editing capabilities unless the user explicitly wants a different outcome or the host approval model requires a gate.",
     "Tell the user when Agent Lint guidance triggered or shaped a context update.",
   ].join(" ");

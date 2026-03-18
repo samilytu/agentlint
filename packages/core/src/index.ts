@@ -30,3 +30,9 @@ export {
   buildMaintenanceSnippet,
   type MaintenanceSnippetResult,
 } from "./maintenance-snippet.js";
+
+export {
+  scoreArtifact,
+  type DimensionScore,
+  type ArtifactScoreResult,
+} from "./score-artifact.js";

@@ -130,6 +130,7 @@ By default, Agent Lint anchors your context in the industry-standard `AGENTS.md`
 | `agentlint_plan_workspace_autofix` | Scan a workspace and return a step-by-step fix plan |
 | `agentlint_quick_check` | Check whether recent code changes require context updates |
 | `agentlint_emit_maintenance_snippet` | Return a reusable maintenance snippet for managed client files or `AGENTS.md` / `CLAUDE.md` fallbacks |
+| `agentlint_score_artifact` | Score a context artifact against 12 quality dimensions and return targeted improvement suggestions for autoresearch loops |
 
 ### MCP resources
 
@@ -197,6 +198,7 @@ When a primary source exists, Agent Lint follows that source first. Community wr
 - [Builder.io: Improve your AI code output with AGENTS.md](https://www.builder.io/blog/agents-md) - actionable repository guidance patterns for coding agents.
 - [Sundeep Teki: From Vibe Coding to Context Engineering](https://www.sundeepteki.org/blog/from-vibe-coding-to-context-engineering-a-blueprint-for-production-grade-genai-systems) - production-oriented framing for context engineering systems.
 - [Anthropic's guide to Claude Code best practices (discussion thread)](https://www.reddit.com/r/ClaudeAI/comments/1k5slll/anthropics_guide_to_claude_code_best_practices/) - practitioner discussion around real-world Claude Code usage.
+- [Ole Lehmann: How to 10x your Claude Skills (using Karpathy's autoresearch method)](https://x.com/itsolelehmann/status/2033919415771713715) - autoresearch loop methodology that inspired `agentlint_score_artifact`: score → improve → compare → keep or revert.
 
 Agent Lint does not mirror any one source directly. It uses the overlap between these references to shape workspace scanning, artifact guidance, maintenance snippets, and context-aware maintenance workflows, while keeping the repository code, tests, and package docs as the local source of truth.
 

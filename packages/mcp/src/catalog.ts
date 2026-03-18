@@ -3,6 +3,7 @@ export const CURRENT_TOOL_IDS = [
   "agentlint_plan_workspace_autofix",
   "agentlint_quick_check",
   "agentlint_emit_maintenance_snippet",
+  "agentlint_score_artifact",
 ] as const;
 
 export const CURRENT_RESOURCE_URIS = [
@@ -16,6 +17,7 @@ export const CURRENT_TOOL_TIMEOUTS: Record<(typeof CURRENT_TOOL_IDS)[number], nu
   agentlint_plan_workspace_autofix: 60_000,
   agentlint_quick_check: 30_000,
   agentlint_emit_maintenance_snippet: 10_000,
+  agentlint_score_artifact: 30_000,
 };
 
 export const LEGACY_TOOL_TIMEOUT_ALIASES: Record<string, number> = {
