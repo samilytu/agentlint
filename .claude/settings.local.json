@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(pnpm run:*)",
+      "Bash(node packages/cli/dist/index.js score fixtures/good-skills.md)",
+      "Bash(node packages/cli/dist/index.js score fixtures/bad-skills.md --type skills)",
+      "Bash(grep -r \"describe\\\\|it\\\\|test\\\\|expect\" /c/Users/bsamilozturk/Desktop/agent-lint/packages/cli/tests/*.test.ts)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "agentlint"
+  ]
+}
