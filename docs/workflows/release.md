@@ -29,12 +29,16 @@ mode: manual
    - Run `npm pack --dry-run` from `packages/cli` and `packages/mcp` as needed.
 6. Hand off to the documented GitLab flow.
    - Merge to `main`, let GitLab maintain `release/next`, and publish only from the package-scoped tag pipeline after review.
+7. Treat `main` and `release/next` pipelines separately.
+   - A green `release/next` MR pipeline does not prove that `mirror-main-branch` on `main` succeeded.
 
 # Failure Handling
 
 - If docs consistency tests fail, reconcile README tables and package docs with the current code surface before retrying.
 - If `npm pack --dry-run` includes unexpected files, fix the package `files` field or build output before publishing.
 - If release metadata is missing, add the changeset instead of editing package versions by hand.
+- If `mirror-main-branch` fails, classify the failure first: helper-script bug, auth or secret issue, GitHub drift, or branch-protection rejection.
+- If GitHub `main` drifted from GitLab `main`, recover with a lease-safe mirror strategy rather than a blind force push.
 - If publish or tag work would change remote state and approval is missing, stop and ask the user before continuing.
 
 # Verification and Evidence
@@ -54,3 +58,4 @@ mode: manual
 - Do not create tags, publish to npm, or mirror branches without explicit approval.
 - Do not bypass GitLab as the authoritative release control plane.
 - Do not store tokens or publish secrets in repo files, scripts, or docs.
+- Do not merge code directly on GitHub `main`.

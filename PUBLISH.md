@@ -23,6 +23,14 @@ Manual version edits and manual tag creation are no longer the normal path.
 
 GitLab is the source of truth for `main`. Do not merge code directly on GitHub `main`; the mirror job uses `--force-with-lease` to restore GitHub to the exact GitLab history when they diverge.
 
+## Release Ops Notes
+
+- Use conventional commits that match the actual change: `fix(ci): ...` for CI or mirror fixes, `docs:` for release-doc updates, and reserve `chore(release): prepare npm release` for the automated release-bot flow.
+- Do not add `Co-authored-by` or AI attribution trailers unless they are explicitly requested for that change.
+- Add a changeset only when published package output changes under `packages/cli`, `packages/mcp`, `packages/core`, or `packages/shared`. Docs-only, skill-only, workflow-only, and CI-only fixes do not need one.
+- If `mirror-main-branch` fails, classify the failure before changing remote state: helper-script crash, auth or secret issue, non-fast-forward drift, or GitHub branch-protection rejection.
+- A green `release/next` merge-request pipeline does not prove the `main` branch mirror job passed; treat those as separate checks.
+
 ## Local Verification
 
 Before opening a merge request:
@@ -110,3 +118,4 @@ Current CI auth behavior:
 - create package-scoped release tags after the release MR merges
 - wait for a maintainer to start the publish job from the tag pipeline
 - mirror successful release tags to GitHub only after npm publish succeeds
+- classify mirror failures before retrying: script/runtime, auth, branch drift, or branch protection

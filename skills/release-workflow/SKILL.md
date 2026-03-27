@@ -1,6 +1,6 @@
 ---
 name: release-workflow
-description: Guide Agent Lint package releases through the repository's GitLab-controlled flow. Use when preparing a release, validating release readiness, or reviewing release process drift. Trigger on "release", "changeset", "publish", "tag", "release/next".
+description: Guide routine Agent Lint package releases through the repository's GitLab-controlled flow. Use when preparing a release, deciding whether a changeset is required, validating release readiness, or reviewing release-process drift after code changes. Trigger on "release", "changeset", "release/next", "tag plan", "release readiness".
 disable-model-invocation: false
 activation-mode: on-request
 scope: release-management
@@ -42,7 +42,7 @@ Apply the repository's documented release workflow consistently across CLI and M
 ### Excluded
 - manual publish execution
 - ad hoc versioning strategy changes
-- unrelated CI debugging outside release flow
+- git push, mirror, or pipeline debugging outside routine release flow
 
 ## Inputs
 
@@ -59,6 +59,7 @@ Apply the repository's documented release workflow consistently across CLI and M
 4. Verify root checks and package dry-run expectations.
 5. Confirm the expected GitLab release path and package-scoped tag pattern.
 6. Return a release checklist tailored to the touched files.
+7. Hand off Git or pipeline incidents to `git-release-ci-ops`.
 
 ## Output Contract
 

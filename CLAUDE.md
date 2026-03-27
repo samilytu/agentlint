@@ -61,7 +61,8 @@ Strict TypeScript monorepo with four packages. Dependency flow: `shared ← core
 
 ## Conventions
 
-- Conventional commits: `feat(cli):`, `fix(mcp):`, `docs:`, `chore(release):`.
+- Conventional commits: `feat(cli):`, `fix(mcp):`, `fix(ci):`, `docs:`, `chore(release):`.
+- Do not append `Co-authored-by` or AI attribution trailers unless explicitly requested.
 - Changes to CLI commands/flags or MCP tools/resources must update the corresponding package README and tests.
 - Use `pnpm changeset` for changes affecting published package outputs (`@agent-lint/cli`, `@agent-lint/mcp`). Not needed for docs-only or CI-only changes.
 - GitHub is the public home; GitLab CI is the authoritative publish path. Package versions come from Changesets via the GitLab release MR flow.
@@ -91,7 +92,7 @@ packages/
   */tests/           → Vitest test suites per package
 docs/plans/          → Implementation and rollout plans
 docs/workflows/      → Release and operational workflows
-skills/              → Reusable skill definitions (code-quality, frontend, npm-publish, release)
+skills/              → Reusable skill definitions (code-quality, frontend, git-release-ci-ops, npm-publish, release)
 ```
 
 ## Working Rules
