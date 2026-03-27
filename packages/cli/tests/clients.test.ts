@@ -12,6 +12,7 @@ import {
   getAvailableScopes,
   resolveConfigPath,
 } from "../src/commands/clients.js";
+import { getClientPickerOptions } from "../src/commands/init.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -211,6 +212,14 @@ describe("getDefaultSelectedClientIds", () => {
     expect(selected).toEqual([]);
   });
 
+  it("preselects a single detected client even when detection is binary-only", () => {
+    const selected = getDefaultSelectedClientIds([
+      { client: stubClient("codex"), detectedBy: "binary" },
+    ], process.cwd());
+
+    expect(selected).toEqual(["codex"]);
+  });
+
   it("preselects clients detected from workspace files", () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-client-paths-"));
 
@@ -226,6 +235,39 @@ describe("getDefaultSelectedClientIds", () => {
     } finally {
       fs.rmSync(cwd, { recursive: true, force: true });
     }
+  });
+});
+
+describe("getClientPickerOptions", () => {
+  it("sorts detected clients first and marks detected/global-only labels", () => {
+    const detected = [
+      {
+        client: stubClient("cursor", {
+          scopes: {
+            workspace: { pathTemplate: ".cursor/mcp.json", absolute: false },
+            global: { pathTemplate: "/home/tester/.cursor/mcp.json", absolute: true },
+          },
+        }),
+        detectedBy: "directory" as const,
+      },
+      {
+        client: stubClient("cline", {
+          scopes: {
+            global: { pathTemplate: "/home/tester/.cline/settings.json", absolute: true },
+          },
+        }),
+        detectedBy: "extension" as const,
+      },
+    ];
+
+    const options = getClientPickerOptions(detected);
+
+    expect(options[0]?.value).toBe("cursor");
+    expect(options[1]?.value).toBe("cline");
+    expect(options[0]?.detected).toBe(true);
+    expect(options[1]?.detected).toBe(true);
+    expect(options.find((option) => option.value === "cline")?.globalOnly).toBe(true);
+    expect(options.find((option) => option.value === "cursor")?.globalOnly).toBe(false);
   });
 });
 
@@ -358,5 +400,100 @@ describe("resolveConfigPath", () => {
     expect(slash(resolveConfigPath(kilo!, "global", cwd)!)).toContain("/Code/User/globalStorage/kilocode.kilo-code/settings/mcp_settings.json");
     expect(slash(resolveConfigPath(roo!, "global", cwd)!)).toContain("/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json");
     expect(slash(resolveConfigPath(kiro!, "global", cwd)!)).toMatch(/\.kiro\/settings\/mcp\.json$/);
+  });
+
+  it("resolves macOS Claude Desktop paths from Library/Application Support", async () => {
+    const previousPlatform = Object.getOwnPropertyDescriptor(process, "platform");
+
+    try {
+      Object.defineProperty(process, "platform", { value: "darwin" });
+      vi.resetModules();
+      const reloadedClients = await import("../src/commands/clients.js");
+      const client = reloadedClients.CLIENT_REGISTRY.find((entry) => entry.id === "claude-desktop");
+
+      expect(client).toBeDefined();
+      expect(slash(reloadedClients.resolveConfigPath(client!, "global", "/workspace")!))
+        .toContain("/Library/Application Support/Claude/claude_desktop_config.json");
+    } finally {
+      if (previousPlatform) {
+        Object.defineProperty(process, "platform", previousPlatform);
+      }
+      vi.resetModules();
+    }
+  });
+
+  it("resolves Windows Claude Desktop paths from APPDATA", async () => {
+    const previousPlatform = Object.getOwnPropertyDescriptor(process, "platform");
+    const previousAppData = process.env["APPDATA"];
+    const previousHome = process.env["HOME"];
+    const previousUserProfile = process.env["USERPROFILE"];
+
+    try {
+      Object.defineProperty(process, "platform", { value: "win32" });
+      process.env["APPDATA"] = "C:\\Users\\tester\\AppData\\Roaming";
+      process.env["HOME"] = "C:\\Users\\tester";
+      process.env["USERPROFILE"] = "C:\\Users\\tester";
+      vi.resetModules();
+      const reloadedClients = await import("../src/commands/clients.js");
+      const client = reloadedClients.CLIENT_REGISTRY.find((entry) => entry.id === "claude-desktop");
+
+      expect(client).toBeDefined();
+      expect(slash(reloadedClients.resolveConfigPath(client!, "global", "C:/workspace")!))
+        .toBe("C:/Users/tester/AppData/Roaming/Claude/claude_desktop_config.json");
+    } finally {
+      if (previousPlatform) {
+        Object.defineProperty(process, "platform", previousPlatform);
+      }
+      if (previousAppData === undefined) {
+        delete process.env["APPDATA"];
+      } else {
+        process.env["APPDATA"] = previousAppData;
+      }
+      if (previousHome === undefined) {
+        delete process.env["HOME"];
+      } else {
+        process.env["HOME"] = previousHome;
+      }
+      if (previousUserProfile === undefined) {
+        delete process.env["USERPROFILE"];
+      } else {
+        process.env["USERPROFILE"] = previousUserProfile;
+      }
+      vi.resetModules();
+    }
+  });
+
+  it("resolves Linux Zed paths from XDG config", async () => {
+    const previousPlatform = Object.getOwnPropertyDescriptor(process, "platform");
+    const previousXdg = process.env["XDG_CONFIG_HOME"];
+    const previousHome = process.env["HOME"];
+
+    try {
+      Object.defineProperty(process, "platform", { value: "linux" });
+      process.env["XDG_CONFIG_HOME"] = "/home/tester/.config";
+      process.env["HOME"] = "/home/tester";
+      vi.resetModules();
+      const reloadedClients = await import("../src/commands/clients.js");
+      const client = reloadedClients.CLIENT_REGISTRY.find((entry) => entry.id === "zed");
+
+      expect(client).toBeDefined();
+      expect(slash(reloadedClients.resolveConfigPath(client!, "global", "/workspace")!))
+        .toBe("/home/tester/.config/zed/settings.json");
+    } finally {
+      if (previousPlatform) {
+        Object.defineProperty(process, "platform", previousPlatform);
+      }
+      if (previousXdg === undefined) {
+        delete process.env["XDG_CONFIG_HOME"];
+      } else {
+        process.env["XDG_CONFIG_HOME"] = previousXdg;
+      }
+      if (previousHome === undefined) {
+        delete process.env["HOME"];
+      } else {
+        process.env["HOME"] = previousHome;
+      }
+      vi.resetModules();
+    }
   });
 });

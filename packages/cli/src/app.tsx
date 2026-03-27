@@ -83,6 +83,7 @@ export function App({ initialCommand, commandOptions }: AppProps): React.ReactNo
   const handleInitComplete = useCallback((results: ClientInstallResult[]) => {
     const created = results.some(
       (r) => r.configResult.status === "created" ||
+        r.configResult.status === "updated" ||
         r.configResult.status === "merged" ||
         r.configResult.status === "cli-success",
     );

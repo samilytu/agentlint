@@ -176,6 +176,28 @@ describe("CLI output modes", () => {
     }
   });
 
+  it("init --stdout repairs stale config entries instead of skipping them", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-init-update-"));
+    fs.mkdirSync(path.join(tmpDir, ".vscode"), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, ".vscode", "mcp.json"),
+      JSON.stringify({ servers: { agentlint: { command: "node", args: ["legacy"] } } }, null, 2),
+      "utf-8",
+    );
+
+    try {
+      const out = run(["init", "--stdout"], tmpDir);
+      expect(out).toContain("[updated]");
+      const parsed = JSON.parse(fs.readFileSync(path.join(tmpDir, ".vscode", "mcp.json"), "utf-8")) as {
+        servers: { agentlint: { command: string; args: string[] } };
+      };
+      expect(parsed.servers.agentlint.command).toBe("npx");
+      expect(parsed.servers.agentlint.args).toEqual(["-y", "@agent-lint/mcp"]);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it("--version prints version from package.json", () => {
     const out = run(["--version"]);
     expect(out.trim()).toMatch(/^\d+\.\d+\.\d+/);

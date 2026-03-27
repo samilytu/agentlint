@@ -13,12 +13,48 @@ import path from "node:path";
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/app.js";
-import { InitWizard } from "../src/commands/init.js";
+import { InitWizard, getCommonScopes } from "../src/commands/init.js";
+import { CLIENT_REGISTRY } from "../src/commands/clients.js";
 import { pressArrowDown, pressEnter, renderInTTY, sleep, waitFor } from "./tty-test-utils.js";
 
 // Space key for MultiSelect toggle
 function pressSpace(stdin: NodeJS.WritableStream): void {
   stdin.write(" ");
+}
+
+type EnvSnapshot = Record<string, string | undefined>;
+
+function withIsolatedClientEnv<T>(tmpDir: string, fn: () => Promise<T>): Promise<T> {
+  const previous: EnvSnapshot = {
+    HOME: process.env["HOME"],
+    USERPROFILE: process.env["USERPROFILE"],
+    APPDATA: process.env["APPDATA"],
+    XDG_CONFIG_HOME: process.env["XDG_CONFIG_HOME"],
+    LOCALAPPDATA: process.env["LOCALAPPDATA"],
+    PATH: process.env["PATH"],
+  };
+
+  process.env["HOME"] = path.join(tmpDir, "home");
+  process.env["USERPROFILE"] = path.join(tmpDir, "home");
+  process.env["APPDATA"] = path.join(tmpDir, "appdata");
+  process.env["XDG_CONFIG_HOME"] = path.join(tmpDir, "xdg");
+  process.env["LOCALAPPDATA"] = path.join(tmpDir, "localappdata");
+  process.env["PATH"] = "";
+
+  fs.mkdirSync(process.env["HOME"]!, { recursive: true });
+  fs.mkdirSync(process.env["APPDATA"]!, { recursive: true });
+  fs.mkdirSync(process.env["XDG_CONFIG_HOME"]!, { recursive: true });
+  fs.mkdirSync(process.env["LOCALAPPDATA"]!, { recursive: true });
+
+  return fn().finally(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  });
 }
 
 async function withTempCwd(fn: (dir: string) => Promise<void>): Promise<void> {
@@ -38,6 +74,17 @@ afterEach(() => {
 });
 
 // ── Scope selection ───────────────────────────────────────────────────────
+
+describe("scope calculation", () => {
+  it("limits mixed client selections to the shared scope intersection", () => {
+    const cursor = CLIENT_REGISTRY.find((client) => client.id === "cursor");
+    const cline = CLIENT_REGISTRY.find((client) => client.id === "cline");
+
+    expect(cursor).toBeDefined();
+    expect(cline).toBeDefined();
+    expect(getCommonScopes([cursor!, cline!])).toEqual(["global"]);
+  });
+});
 
 describe("scope selection — workspace (default)", () => {
   it("pressing Enter on scope select picks workspace scope and creates local config", async () => {
@@ -320,6 +367,132 @@ describe("zero clients detected — empty workspace", () => {
       }
     });
   }, 10_000);
+
+  it("pressing Enter with no toggles selects the focused client", async () => {
+    await withTempCwd(async (tmpDir) => withIsolatedClientEnv(tmpDir, async () => {
+      vi.resetModules();
+      const { InitWizard: IsolatedInitWizard } = await import("../src/commands/init.js");
+      const onComplete = vi.fn();
+
+      const session = renderInTTY(
+        React.createElement(IsolatedInitWizard, {
+          options: {},
+          onComplete,
+          showBanner: false,
+        }),
+      );
+
+      try {
+        await waitFor(
+          () => session.getStdout().toUpperCase().includes("SELECT CLIENTS TO CONFIGURE"),
+          { timeoutMs: 5_000 },
+        );
+
+        await sleep(100);
+        pressEnter(session.stdin);
+
+        await waitFor(
+          () => session.getStdout().toUpperCase().includes("SELECT CONFIG SCOPE"),
+          { timeoutMs: 5_000 },
+        );
+
+        pressEnter(session.stdin);
+
+        await waitFor(
+          () =>
+            session.getStdout().toUpperCase().includes("INSTALL MAINTENANCE RULES") ||
+            session.getStdout().includes("MCP config is ready."),
+          { timeoutMs: 10_000 },
+        );
+
+        if (session.getStdout().toUpperCase().includes("INSTALL MAINTENANCE RULES")) {
+          pressArrowDown(session.stdin);
+          await sleep(50);
+          pressEnter(session.stdin);
+        }
+
+        await waitFor(() => session.getStdout().includes("MCP config is ready."), {
+          timeoutMs: 5_000,
+        });
+
+        await sleep(100);
+        pressEnter(session.stdin);
+        await waitFor(() => onComplete.mock.calls.length === 1, { timeoutMs: 5_000 });
+
+        const results = onComplete.mock.calls[0]?.[0] as Array<{ configResult: { status: string } }>;
+        expect(results).toHaveLength(1);
+        expect(results[0]?.configResult.status).toMatch(/created|merged|cli-success/);
+      } finally {
+        session.cleanup();
+        vi.resetModules();
+      }
+    }));
+  }, 20_000);
+
+  it("space still toggles multiple client selections before submit", async () => {
+    await withTempCwd(async (tmpDir) => withIsolatedClientEnv(tmpDir, async () => {
+      vi.resetModules();
+      const { InitWizard: IsolatedInitWizard } = await import("../src/commands/init.js");
+      const onComplete = vi.fn();
+
+      const session = renderInTTY(
+        React.createElement(IsolatedInitWizard, {
+          options: {},
+          onComplete,
+          showBanner: false,
+        }),
+      );
+
+      try {
+        await waitFor(
+          () => session.getStdout().toUpperCase().includes("SELECT CLIENTS TO CONFIGURE"),
+          { timeoutMs: 5_000 },
+        );
+
+        await sleep(100);
+        pressSpace(session.stdin);
+        await sleep(50);
+        pressArrowDown(session.stdin);
+        await sleep(50);
+        pressSpace(session.stdin);
+        await sleep(50);
+        pressEnter(session.stdin);
+
+        await waitFor(
+          () => session.getStdout().toUpperCase().includes("SELECT CONFIG SCOPE"),
+          { timeoutMs: 5_000 },
+        );
+
+        pressEnter(session.stdin);
+        await waitFor(
+          () =>
+            session.getStdout().toUpperCase().includes("INSTALL MAINTENANCE RULES") ||
+            session.getStdout().includes("MCP config is ready."),
+          { timeoutMs: 10_000 },
+        );
+
+        if (session.getStdout().toUpperCase().includes("INSTALL MAINTENANCE RULES")) {
+          pressArrowDown(session.stdin);
+          await sleep(50);
+          pressEnter(session.stdin);
+        }
+
+        await waitFor(() => session.getStdout().includes("MCP config is ready."), {
+          timeoutMs: 5_000,
+        });
+
+        await sleep(100);
+        pressEnter(session.stdin);
+        await waitFor(() => onComplete.mock.calls.length === 1, { timeoutMs: 5_000 });
+
+        const results = onComplete.mock.calls[0]?.[0] as unknown[];
+        expect(results).toHaveLength(2);
+      } finally {
+        session.cleanup();
+        vi.resetModules();
+      }
+    }));
+  }, 20_000);
 });
 
 // ── Main menu exit ────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Box, Text, render, useApp } from "ink";
-import { Spinner, MultiSelect, Select } from "@inkjs/ui";
+import { Box, Text, render, useApp, useInput } from "ink";
+import { Spinner, Select } from "@inkjs/ui";
 import {
   Banner,
   ContinuePrompt,
@@ -8,6 +8,7 @@ import {
   SuccessItem,
   SkipItem,
   ErrorItem,
+  Hint,
   NextStep,
   Divider,
 } from "../ui/components.js";
@@ -37,6 +38,13 @@ type WizardStep =
   | "installingRules"
   | "done";
 
+interface ClientPickerOption {
+  client: McpClient;
+  value: ClientId;
+  detected: boolean;
+  globalOnly: boolean;
+}
+
 export interface ClientInstallResult {
   client: McpClient;
   scope: Scope;
@@ -52,6 +60,7 @@ export interface InitWizardProps {
 
 function isConfigReady(result: InstallResult): boolean {
   return result.status === "created" ||
+    result.status === "updated" ||
     result.status === "merged" ||
     result.status === "exists" ||
     result.status === "cli-success";
@@ -94,6 +103,11 @@ function shouldPreferCliInstall(client: McpClient): boolean {
 function printConfigResult(client: McpClient, result: InstallResult): void {
   switch (result.status) {
     case "created":
+      process.stdout.write(`[created] ${result.configPath} (${client.name})\n`);
+      break;
+    case "updated":
+      process.stdout.write(`[updated] ${result.configPath} (${client.name})\n`);
+      break;
     case "merged":
       process.stdout.write(`[created] ${result.configPath} (${client.name})\n`);
       break;
@@ -167,6 +181,149 @@ function runStdoutInit(options: { yes?: boolean; all?: boolean; withRules?: bool
   }
 }
 
+export function getCommonScopes(clients: McpClient[]): Scope[] {
+  if (clients.length === 0) {
+    return [];
+  }
+
+  const orderedScopes: Scope[] = ["workspace", "global"];
+  return orderedScopes.filter((scope) =>
+    clients.every((client) => client.scopes[scope]));
+}
+
+function getScopeChoices(clients: McpClient[]): Scope[] {
+  if (clients.length === 0) {
+    return [];
+  }
+
+  const orderedScopes: Scope[] = ["workspace", "global"];
+  return orderedScopes.filter((scope) =>
+    clients.some((client) => client.scopes[scope]));
+}
+
+export function getClientPickerOptions(detected: DetectedClient[]): ClientPickerOption[] {
+  const detectedIds = new Set(detected.map((entry) => entry.client.id));
+
+  return [...CLIENT_REGISTRY]
+    .sort((left, right) => {
+      const leftDetected = detectedIds.has(left.id);
+      const rightDetected = detectedIds.has(right.id);
+      if (leftDetected === rightDetected) {
+        return 0;
+      }
+      return leftDetected ? -1 : 1;
+    })
+    .map((client) => ({
+      client,
+      value: client.id,
+      detected: detectedIds.has(client.id),
+      globalOnly: !client.scopes.workspace && !!client.scopes.global,
+    }));
+}
+
+function ClientPicker({
+  options,
+  defaultValue,
+  onSubmit,
+}: {
+  options: ClientPickerOption[];
+  defaultValue: ClientId[];
+  onSubmit: (values: ClientId[]) => void;
+}): React.ReactNode {
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [selected, setSelected] = useState<ClientId[]>(defaultValue);
+
+  useInput((input, key) => {
+    if (key.downArrow) {
+      setFocusedIndex((current) => Math.min(current + 1, options.length - 1));
+      return;
+    }
+
+    if (key.upArrow) {
+      setFocusedIndex((current) => Math.max(current - 1, 0));
+      return;
+    }
+
+    if (input === " ") {
+      const focused = options[focusedIndex];
+      if (!focused) {
+        return;
+      }
+
+      setSelected((current) =>
+        current.includes(focused.value)
+          ? current.filter((value) => value !== focused.value)
+          : [...current, focused.value]
+      );
+      return;
+    }
+
+    if (key.return) {
+      const focused = options[focusedIndex];
+      if (!focused) {
+        onSubmit(selected);
+        return;
+      }
+
+      if (selected.length === 0) {
+        onSubmit([focused.value]);
+        return;
+      }
+
+      onSubmit(selected);
+    }
+  });
+
+  return (
+    <Box flexDirection="column">
+      <Box marginBottom={1} marginLeft={1}>
+        <Text color={colors.tertiary} bold>
+          {selected.length} client{selected.length !== 1 ? "s" : ""} selected
+        </Text>
+      </Box>
+      {options.map((option, index) => {
+        const isFocused = index === focusedIndex;
+        const isSelected = selected.includes(option.value);
+        const prefix = isFocused ? ">" : " ";
+        const checkbox = isSelected ? "[x]" : "[ ]";
+
+        return (
+          <Box key={option.value} marginLeft={1} gap={1}>
+            <Text color={isFocused ? colors.accent : colors.dim}>{prefix}</Text>
+            <Text color={isSelected ? colors.success : colors.muted}>{checkbox}</Text>
+            <Text color={isFocused ? colors.tertiary : undefined}>
+              {option.client.name}
+            </Text>
+            {option.detected && (
+              <Text color={colors.secondary}>
+                {"(detected)"}
+              </Text>
+            )}
+            {option.globalOnly && (
+              <Text color={colors.warning}>
+                {"(global only)"}
+              </Text>
+            )}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+function buildNoCommonScopeResults(selectedClientIds: ClientId[]): ClientInstallResult[] {
+  return CLIENT_REGISTRY
+    .filter((client) => selectedClientIds.includes(client.id))
+    .map((client) => ({
+      client,
+      scope: getAvailableScopes(client)[0] ?? "global",
+      configResult: {
+        status: "error" as const,
+        message: "Selected clients do not share a common config scope.",
+      },
+    }));
+}
+
 export function InitWizard({ options, onComplete, showBanner = true }: InitWizardProps): React.ReactNode {
   const { exit } = useApp();
   const cwd = process.cwd();
@@ -184,11 +341,21 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
       setDetected(found);
 
       if (options.all) {
-        setSelectedClientIds(CLIENT_REGISTRY.map((c) => c.id));
+        const allClientIds = CLIENT_REGISTRY.map((client) => client.id);
+        const scopeChoices = getScopeChoices(CLIENT_REGISTRY);
+        setSelectedClientIds(allClientIds);
+
+        if (scopeChoices.length === 1) {
+          setSelectedScope(scopeChoices[0]);
+          setStep("installing");
+          return;
+        }
+
         setStep("selectScope");
-      } else {
-        setStep("selectClients");
+        return;
       }
+
+      setStep("selectClients");
     });
     return () => clearImmediate(id);
   }, [cwd, options.all]);
@@ -199,8 +366,7 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
     }
 
     const id = setImmediate(() => {
-      const selectedClients = CLIENT_REGISTRY.filter((c) =>
-        selectedClientIds.includes(c.id));
+      const selectedClients = CLIENT_REGISTRY.filter((client) => selectedClientIds.includes(client.id));
       const configResults = selectedClients.map((client) => ({
         client,
         scope: selectedScope,
@@ -238,7 +404,7 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
             return {
               ...entry,
               maintenanceResult: {
-                status: "skipped",
+                status: "skipped" as const,
                 message: "MCP config was not installed for this client.",
               },
             };
@@ -264,20 +430,19 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
     return () => clearTimeout(id);
   }, [exit, onComplete, step]);
 
-  const clientOptions = CLIENT_REGISTRY.map((client) => {
-    const det = detected.find((d) => d.client.id === client.id);
-    const suffix = det ? ` (detected via ${det.detectedBy})` : "";
+  const defaultSelected = getDefaultSelectedClientIds(detected, cwd);
+  const clientOptions = getClientPickerOptions(detected);
+  const selectedClients = CLIENT_REGISTRY.filter((client) => selectedClientIds.includes(client.id));
+  const scopeChoices = getScopeChoices(selectedClients);
+  const scopeOptions = scopeChoices.map((scope) => {
+    const supportedCount = selectedClients.filter((client) => client.scopes[scope]).length;
     return {
-      label: `${client.name}${suffix}`,
-      value: client.id,
+      label: scope === "workspace"
+        ? `Workspace - project-local config (${supportedCount}/${selectedClients.length} clients)`
+        : `Global - user-level config (${supportedCount}/${selectedClients.length} clients)`,
+      value: scope,
     };
   });
-
-  const defaultSelected = getDefaultSelectedClientIds(detected, cwd);
-  const scopeOptions = [
-    { label: "Workspace - project-local config", value: "workspace" as Scope },
-    { label: "Global - user-level config", value: "global" as Scope },
-  ];
 
   return (
     <Box flexDirection="column">
@@ -311,21 +476,30 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
           )}
 
           <SectionTitle>Select clients to configure</SectionTitle>
-          <Box marginLeft={3} marginBottom={0}>
-            <Text color={colors.dim} italic>
-              {"↑/↓ navigate · space toggle · enter confirm"}
-            </Text>
-          </Box>
+          <Hint>{"Enter selects the focused client. Space toggles more clients. Use arrows to move."}</Hint>
           <Box marginLeft={3} marginTop={0}>
-            <MultiSelect
+            <ClientPicker
               options={clientOptions}
               defaultValue={defaultSelected}
               onSubmit={(values) => {
-                if (values.length === 0) {
+                const resolvedIds = values as ClientId[];
+                const resolvedClients = CLIENT_REGISTRY.filter((client) => resolvedIds.includes(client.id));
+                const resolvedScopes = getScopeChoices(resolvedClients);
+
+                setSelectedClientIds(resolvedIds);
+
+                if (resolvedScopes.length === 0) {
+                  setResults(buildNoCommonScopeResults(resolvedIds));
                   setStep("done");
                   return;
                 }
-                setSelectedClientIds(values as ClientId[]);
+
+                if (resolvedScopes.length === 1) {
+                  setSelectedScope(resolvedScopes[0]);
+                  setStep("installing");
+                  return;
+                }
+
                 setStep("selectScope");
               }}
             />
@@ -343,11 +517,9 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
           </Box>
 
           <SectionTitle>Select config scope</SectionTitle>
-          <Box marginLeft={3} marginBottom={0}>
-            <Text color={colors.dim} italic>
-              {"↑/↓ navigate · enter confirm"}
-            </Text>
-          </Box>
+          <Hint>{"Selected scope labels show how many chosen clients support each scope."}</Hint>
+          <Hint>{"Clients that do not support the chosen scope will be reported in the results."}</Hint>
+          <Hint>{"Use Enter to confirm the focused scope."}</Hint>
           <Box marginLeft={3} marginTop={0}>
             <Select
               options={scopeOptions}
@@ -362,7 +534,7 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
 
       {step === "installing" && (
         <Box marginTop={1} marginLeft={2}>
-          <Spinner label="Configuring MCP servers..." />
+          <Spinner label={`Configuring ${selectedScope ?? "selected"} MCP servers...`} />
         </Box>
       )}
 
@@ -374,11 +546,7 @@ export function InitWizard({ options, onComplete, showBanner = true }: InitWizar
           </Box>
 
           <SectionTitle>Install maintenance rules</SectionTitle>
-          <Box marginLeft={3} marginBottom={0}>
-            <Text color={colors.dim} italic>
-              {"↑/↓ navigate · enter confirm"}
-            </Text>
-          </Box>
+          <Hint>{"Use Enter to confirm the focused option."}</Hint>
           <Box marginLeft={3} marginTop={0}>
             <Select
               options={[
@@ -452,31 +620,33 @@ function ResultsView({
   }
 
   const created = results.filter(
-    (r) => r.configResult.status === "created" ||
-      r.configResult.status === "merged" ||
-      r.configResult.status === "cli-success",
+    (result) => result.configResult.status === "created" ||
+      result.configResult.status === "updated" ||
+      result.configResult.status === "merged" ||
+      result.configResult.status === "cli-success",
   );
-  const skipped = results.filter((r) => r.configResult.status === "exists");
+  const skipped = results.filter((result) => result.configResult.status === "exists");
   const errors = results.filter(
-    (r) => r.configResult.status === "error" || r.configResult.status === "no-scope");
+    (result) => result.configResult.status === "error" || result.configResult.status === "no-scope");
   const ruleCreated = results.filter(
-    (r) => r.maintenanceResult?.status === "created" ||
-      r.maintenanceResult?.status === "updated" ||
-      r.maintenanceResult?.status === "appended");
-  const ruleExisting = results.filter((r) => r.maintenanceResult?.status === "exists");
-  const ruleSkipped = results.filter((r) => r.maintenanceResult?.status === "skipped");
-  const ruleErrors = results.filter((r) => r.maintenanceResult?.status === "error");
+    (result) => result.maintenanceResult?.status === "created" ||
+      result.maintenanceResult?.status === "updated" ||
+      result.maintenanceResult?.status === "appended",
+  );
+  const ruleExisting = results.filter((result) => result.maintenanceResult?.status === "exists");
+  const ruleSkipped = results.filter((result) => result.maintenanceResult?.status === "skipped");
+  const ruleErrors = results.filter((result) => result.maintenanceResult?.status === "error");
 
   return (
     <>
       {created.length > 0 && (
         <>
           <SectionTitle>Configured</SectionTitle>
-          {created.map((r, i) => (
-            <SuccessItem key={i}>
-              {r.configResult.status === "cli-success"
-                ? `${r.client.name} (${r.scope}) via CLI`
-                : `${formatPath(r.configResult)} (${r.client.name}, ${r.scope})`}
+          {created.map((result, index) => (
+            <SuccessItem key={index}>
+              {result.configResult.status === "cli-success"
+                ? `${result.client.name} (${result.scope}) via CLI`
+                : `${formatPath(result.configResult)} (${result.client.name}, ${result.scope})`}
             </SuccessItem>
           ))}
         </>
@@ -485,9 +655,9 @@ function ResultsView({
       {skipped.length > 0 && (
         <>
           <SectionTitle>Already configured</SectionTitle>
-          {skipped.map((r, i) => (
-            <SkipItem key={i}>
-              {`${formatPath(r.configResult)} (${r.client.name}) - already exists`}
+          {skipped.map((result, index) => (
+            <SkipItem key={index}>
+              {`${formatPath(result.configResult)} (${result.client.name}) - already exists`}
             </SkipItem>
           ))}
         </>
@@ -496,9 +666,9 @@ function ResultsView({
       {errors.length > 0 && (
         <>
           <SectionTitle>Errors</SectionTitle>
-          {errors.map((r, i) => (
-            <ErrorItem key={i}>
-              {`${r.client.name}: ${formatError(r.configResult)}`}
+          {errors.map((result, index) => (
+            <ErrorItem key={index}>
+              {`${result.client.name}: ${formatError(result.configResult)}`}
             </ErrorItem>
           ))}
         </>
@@ -507,9 +677,9 @@ function ResultsView({
       {ruleCreated.length > 0 && (
         <>
           <SectionTitle>Maintenance rules installed</SectionTitle>
-          {ruleCreated.map((r, i) => (
-            <SuccessItem key={i}>
-              {`${formatMaintenance(r.maintenanceResult)} (${r.client.name})`}
+          {ruleCreated.map((result, index) => (
+            <SuccessItem key={index}>
+              {`${formatMaintenance(result.maintenanceResult)} (${result.client.name})`}
             </SuccessItem>
           ))}
         </>
@@ -518,9 +688,9 @@ function ResultsView({
       {ruleExisting.length > 0 && (
         <>
           <SectionTitle>Maintenance rules already configured</SectionTitle>
-          {ruleExisting.map((r, i) => (
-            <SkipItem key={i}>
-              {`${formatMaintenance(r.maintenanceResult)} (${r.client.name})`}
+          {ruleExisting.map((result, index) => (
+            <SkipItem key={index}>
+              {`${formatMaintenance(result.maintenanceResult)} (${result.client.name})`}
             </SkipItem>
           ))}
         </>
@@ -529,9 +699,9 @@ function ResultsView({
       {ruleSkipped.length > 0 && (
         <>
           <SectionTitle>Maintenance rules skipped</SectionTitle>
-          {ruleSkipped.map((r, i) => (
-            <SkipItem key={i}>
-              {`${r.client.name}: ${formatMaintenance(r.maintenanceResult)}`}
+          {ruleSkipped.map((result, index) => (
+            <SkipItem key={index}>
+              {`${result.client.name}: ${formatMaintenance(result.maintenanceResult)}`}
             </SkipItem>
           ))}
         </>
@@ -540,9 +710,9 @@ function ResultsView({
       {ruleErrors.length > 0 && (
         <>
           <SectionTitle>Maintenance rule errors</SectionTitle>
-          {ruleErrors.map((r, i) => (
-            <ErrorItem key={i}>
-              {`${r.client.name}: ${formatMaintenance(r.maintenanceResult)}`}
+          {ruleErrors.map((result, index) => (
+            <ErrorItem key={index}>
+              {`${result.client.name}: ${formatMaintenance(result.maintenanceResult)}`}
             </ErrorItem>
           ))}
         </>

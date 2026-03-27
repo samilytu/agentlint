@@ -12,6 +12,8 @@ npx @agent-lint/cli init
 
 The `agent-lint` binary opens an interactive TUI in a TTY and falls back to help output in non-interactive environments.
 
+In `init`, `Enter` selects the focused client and continues. Use `Space` when you want to toggle multiple clients before continuing.
+
 ## Commands
 
 | Command | Purpose |

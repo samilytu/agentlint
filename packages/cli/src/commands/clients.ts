@@ -462,6 +462,10 @@ export function detectInstalledClients(cwd: string): DetectedClient[] {
 }
 
 export function getDefaultSelectedClientIds(detected: DetectedClient[], cwd: string): ClientId[] {
+  if (detected.length === 1) {
+    return [detected[0].client.id];
+  }
+
   return detected
     .filter((entry) => {
       if (entry.detectedBy === "config-exists") {

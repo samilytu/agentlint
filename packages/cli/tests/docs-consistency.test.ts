@@ -32,6 +32,7 @@ describe("CLI README consistency", () => {
     expect(cliReadme).toContain("`agent-lint init`");
     expect(cliReadme).toContain("`agent-lint scan`");
     expect(cliReadme).toContain("`agent-lint prompt`");
+    expect(cliReadme).toContain("`Enter` selects the focused client");
     expect(cliReadme).toContain("missing types, incomplete files, stale, conflicting, and weak findings");
     expect(cliReadme).toContain("broad-scan or targeted-maintenance");
     expect(cliReadme).toContain("local git change signals");

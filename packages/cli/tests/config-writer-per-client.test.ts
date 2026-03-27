@@ -384,6 +384,72 @@ describe("idempotency — second install returns 'exists'", () => {
   });
 });
 
+describe("stale agentlint entries — repair in place", () => {
+  it("updates a stale JSON agentlint entry and creates a backup", async () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-update-json-"));
+    const prevEnv = setTempHomeEnv(tmpRoot);
+    const workspace = path.join(tmpRoot, "workspace");
+    fs.mkdirSync(workspace, { recursive: true });
+
+    try {
+      const { CLIENT_REGISTRY, installClient } = await loadCliModules();
+      const client = CLIENT_REGISTRY.find((entry: { id: string }) => entry.id === "cursor")!;
+      const configPath = path.join(workspace, ".cursor", "mcp.json");
+      fs.mkdirSync(path.dirname(configPath), { recursive: true });
+      fs.writeFileSync(
+        configPath,
+        JSON.stringify({ mcpServers: { agentlint: { command: "node", args: ["legacy"] } } }, null, 2),
+        "utf-8",
+      );
+
+      const result = installClient(client, "workspace", workspace, false);
+      expect(result.status).toBe("updated");
+
+      const parsed = JSON.parse(fs.readFileSync(configPath, "utf-8")) as {
+        mcpServers: { agentlint: { command: string; args: string[] } };
+      };
+      expect(parsed.mcpServers.agentlint.command).toBe("npx");
+      expect(parsed.mcpServers.agentlint.args).toEqual(["-y", "@agent-lint/mcp"]);
+      expect(fs.existsSync(`${configPath}.bak`)).toBe(true);
+    } finally {
+      restoreEnv(prevEnv);
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("updates a stale TOML agentlint entry and creates a backup", async () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-update-toml-"));
+    const prevEnv = setTempHomeEnv(tmpRoot);
+    const workspace = path.join(tmpRoot, "workspace");
+    fs.mkdirSync(workspace, { recursive: true });
+
+    try {
+      const { CLIENT_REGISTRY, installClient } = await loadCliModules();
+      const client = CLIENT_REGISTRY.find((entry: { id: string }) => entry.id === "codex")!;
+      const configPath = path.join(workspace, ".codex", "config.toml");
+      fs.mkdirSync(path.dirname(configPath), { recursive: true });
+      fs.writeFileSync(
+        configPath,
+        '[mcp_servers.agentlint]\ncommand = "node"\nargs = ["legacy"]\n',
+        "utf-8",
+      );
+
+      const result = installClient(client, "workspace", workspace, false);
+      expect(result.status).toBe("updated");
+
+      const parsed = parseToml(fs.readFileSync(configPath, "utf-8")) as {
+        mcp_servers: { agentlint: { command: string; args: string[] } };
+      };
+      expect(parsed.mcp_servers.agentlint.command).toBe("npx");
+      expect(parsed.mcp_servers.agentlint.args).toEqual(["-y", "@agent-lint/mcp"]);
+      expect(fs.existsSync(`${configPath}.bak`)).toBe(true);
+    } finally {
+      restoreEnv(prevEnv);
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+});
+
 // ── Merge with existing config ────────────────────────────────────────────
 
 describe("merge — existing servers are preserved", () => {

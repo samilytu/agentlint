@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { isDeepStrictEqual } from "node:util";
 import { parse as parseToml, stringify as stringifyToml } from "smol-toml";
 import {
   type McpClient,
@@ -14,6 +15,7 @@ import {
 
 export type InstallResult =
   | { status: "created"; configPath: string }
+  | { status: "updated"; configPath: string }
   | { status: "exists"; configPath: string }
   | { status: "merged"; configPath: string }
   | { status: "cli-success"; message: string }
@@ -33,6 +35,10 @@ function createBackup(filePath: string): void {
   if (fs.existsSync(filePath)) {
     fs.copyFileSync(filePath, `${filePath}.bak`);
   }
+}
+
+function hasMatchingEntry(existing: unknown, expected: Record<string, unknown>): boolean {
+  return isDeepStrictEqual(existing, expected);
 }
 
 // ── JSON Config Merge ──────────────────────────────────────────────────
@@ -73,7 +79,15 @@ function mergeJsonConfig(
 
     // Idempotency: skip if already configured
     if (serverName in servers) {
-      return { status: "exists", configPath: filePath };
+      if (hasMatchingEntry(servers[serverName], serverEntry)) {
+        return { status: "exists", configPath: filePath };
+      }
+
+      createBackup(filePath);
+      servers[serverName] = serverEntry;
+      config[rootKey] = servers;
+      fs.writeFileSync(filePath, JSON.stringify(config, null, 2) + "\n", "utf-8");
+      return { status: "updated", configPath: filePath };
     }
 
     // Merge
@@ -126,7 +140,15 @@ function mergeTomlConfig(
 
     // Idempotency
     if (serverName in servers) {
-      return { status: "exists", configPath: filePath };
+      if (hasMatchingEntry(servers[serverName], serverEntry)) {
+        return { status: "exists", configPath: filePath };
+      }
+
+      createBackup(filePath);
+      servers[serverName] = serverEntry;
+      config[rootKey] = servers;
+      fs.writeFileSync(filePath, stringifyToml(config) + "\n", "utf-8");
+      return { status: "updated", configPath: filePath };
     }
 
     // Merge
