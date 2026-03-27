@@ -252,6 +252,49 @@ describe("global scope — config created at home-based path", () => {
     }
   });
 
+  it("codex global uses ~/.codex/config.toml", async () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-global-codex-"));
+    const prevEnv = setTempHomeEnv(tmpRoot);
+    const workspace = path.join(tmpRoot, "workspace");
+    fs.mkdirSync(workspace, { recursive: true });
+
+    try {
+      const { CLIENT_REGISTRY, installClient } = await loadCliModules();
+      const client = CLIENT_REGISTRY.find((c: { id: string }) => c.id === "codex")!;
+      const result = installClient(client, "global", workspace, false);
+
+      expect(result.status).toBe("created");
+      if (result.status !== "created") return;
+      expect(result.configPath).toContain(path.join(tmpRoot, "home"));
+      expect(result.configPath.replace(/\\/g, "/")).toContain(".codex/config.toml");
+    } finally {
+      restoreEnv(prevEnv);
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("kilo-code global uses VS Code global storage mcp_settings.json", async () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-global-kilo-"));
+    const prevEnv = setTempHomeEnv(tmpRoot);
+    const workspace = path.join(tmpRoot, "workspace");
+    fs.mkdirSync(workspace, { recursive: true });
+
+    try {
+      const { CLIENT_REGISTRY, installClient } = await loadCliModules();
+      const client = CLIENT_REGISTRY.find((c: { id: string }) => c.id === "kilo-code")!;
+      const result = installClient(client, "global", workspace, false);
+
+      expect(result.status).toBe("created");
+      if (result.status !== "created") return;
+      expect(result.configPath.replace(/\\/g, "/")).toContain(
+        "Code/User/globalStorage/kilocode.kilo-code/settings/mcp_settings.json",
+      );
+    } finally {
+      restoreEnv(prevEnv);
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
   it("antigravity global uses ~/.gemini/antigravity/mcp_config.json", async () => {
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-global-ag-"));
     const prevEnv = setTempHomeEnv(tmpRoot);
@@ -598,6 +641,62 @@ describe("corrupted config — returns 'error' status", () => {
       if (result.status === "error") {
         expect(result.message).toContain('"servers"');
       }
+    } finally {
+      restoreEnv(prevEnv);
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("treats an empty existing JSON config as mergeable", async () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-empty-json-"));
+    const prevEnv = setTempHomeEnv(tmpRoot);
+    const workspace = path.join(tmpRoot, "workspace");
+    fs.mkdirSync(workspace, { recursive: true });
+
+    try {
+      const { CLIENT_REGISTRY, installClient } = await loadCliModules();
+      const client = CLIENT_REGISTRY.find((c: { id: string }) => c.id === "cursor")!;
+
+      const configPath = path.join(workspace, ".cursor", "mcp.json");
+      fs.mkdirSync(path.dirname(configPath), { recursive: true });
+      fs.writeFileSync(configPath, "", "utf-8");
+
+      const result = installClient(client, "workspace", workspace, false);
+      expect(result.status).toBe("merged");
+
+      const parsed = JSON.parse(fs.readFileSync(configPath, "utf-8")) as {
+        mcpServers: Record<string, unknown>;
+      };
+      expect(parsed.mcpServers).toHaveProperty("agentlint");
+      expect(fs.existsSync(`${configPath}.bak`)).toBe(true);
+    } finally {
+      restoreEnv(prevEnv);
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("treats an empty existing TOML config as mergeable", async () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-empty-toml-"));
+    const prevEnv = setTempHomeEnv(tmpRoot);
+    const workspace = path.join(tmpRoot, "workspace");
+    fs.mkdirSync(workspace, { recursive: true });
+
+    try {
+      const { CLIENT_REGISTRY, installClient } = await loadCliModules();
+      const client = CLIENT_REGISTRY.find((c: { id: string }) => c.id === "codex")!;
+
+      const configPath = path.join(workspace, ".codex", "config.toml");
+      fs.mkdirSync(path.dirname(configPath), { recursive: true });
+      fs.writeFileSync(configPath, "", "utf-8");
+
+      const result = installClient(client, "workspace", workspace, false);
+      expect(result.status).toBe("merged");
+
+      const parsed = parseToml(fs.readFileSync(configPath, "utf-8")) as {
+        mcp_servers: Record<string, unknown>;
+      };
+      expect(parsed.mcp_servers).toHaveProperty("agentlint");
+      expect(fs.existsSync(`${configPath}.bak`)).toBe(true);
     } finally {
       restoreEnv(prevEnv);
       fs.rmSync(tmpRoot, { recursive: true, force: true });

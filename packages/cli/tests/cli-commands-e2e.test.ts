@@ -130,6 +130,28 @@ describe("init --all flag", () => {
   }, 30_000);
 });
 
+describe("init --stdout scope selection", () => {
+  it("preserves Codex workspace installs when a project .codex directory exists", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "agentlint-init-codex-ws-"));
+    const fakeHome = path.join(tmpDir, "fake-home");
+    fs.mkdirSync(path.join(tmpDir, ".codex"), { recursive: true });
+    fs.mkdirSync(fakeHome, { recursive: true });
+
+    try {
+      const out = run(["init", "--stdout"], tmpDir, {
+        HOME: fakeHome,
+        USERPROFILE: fakeHome,
+      });
+
+      expect(out).toContain(".codex");
+      expect(fs.existsSync(path.join(tmpDir, ".codex", "config.toml"))).toBe(true);
+      expect(fs.existsSync(path.join(fakeHome, ".codex", "config.toml"))).toBe(false);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  }, 15_000);
+});
+
 // ── scan --json structure ────────────────────────────────────────────────
 
 describe("scan --json output structure", () => {

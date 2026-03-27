@@ -57,7 +57,9 @@ function mergeJsonConfig(
     const raw = fs.readFileSync(filePath, "utf-8");
     let config: Record<string, unknown>;
     try {
-      config = JSON.parse(raw) as Record<string, unknown>;
+      config = raw.trim().length === 0
+        ? {}
+        : JSON.parse(raw) as Record<string, unknown>;
     } catch {
       return { status: "error", message: `Failed to parse JSON: ${filePath}` };
     }
@@ -108,7 +110,9 @@ function mergeTomlConfig(
     const raw = fs.readFileSync(filePath, "utf-8");
     let config: Record<string, unknown>;
     try {
-      config = parseToml(raw) as Record<string, unknown>;
+      config = raw.trim().length === 0
+        ? {}
+        : parseToml(raw) as Record<string, unknown>;
     } catch {
       return { status: "error", message: `Failed to parse TOML: ${filePath}` };
     }

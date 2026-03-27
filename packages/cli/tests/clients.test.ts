@@ -313,6 +313,7 @@ describe("CLIENT_REGISTRY", () => {
     );
 
     expect(scopesById["claude-code"]).toEqual(["workspace", "global"]);
+    expect(scopesById["codex"]).toEqual(["workspace", "global"]);
     expect(scopesById["kilo-code"]).toEqual(["workspace", "global"]);
     expect(scopesById["roo-code"]).toEqual(["workspace", "global"]);
     expect(scopesById["kiro"]).toEqual(["workspace", "global"]);
@@ -331,6 +332,15 @@ describe("resolveConfigPath", () => {
     expect(slash(resolveConfigPath(client!, "global", cwd)!)).toMatch(/\.claude\.json$/);
   });
 
+  it("resolves Codex workspace and global config files", () => {
+    const cwd = "/workspace";
+    const client = CLIENT_REGISTRY.find((entry) => entry.id === "codex");
+
+    expect(client).toBeDefined();
+    expect(slash(resolveConfigPath(client!, "workspace", cwd)!)).toBe("/workspace/.codex/config.toml");
+    expect(slash(resolveConfigPath(client!, "global", cwd)!)).toMatch(/\.codex\/config\.toml$/);
+  });
+
   it("resolves Roo Code, Kilo Code, and Kiro MCP files", () => {
     const cwd = "/workspace";
     const kilo = CLIENT_REGISTRY.find((entry) => entry.id === "kilo-code");
@@ -345,7 +355,7 @@ describe("resolveConfigPath", () => {
     expect(slash(resolveConfigPath(roo!, "workspace", cwd)!)).toBe("/workspace/.roo/mcp.json");
     expect(slash(resolveConfigPath(kiro!, "workspace", cwd)!)).toBe("/workspace/.kiro/settings/mcp.json");
 
-    expect(slash(resolveConfigPath(kilo!, "global", cwd)!)).toMatch(/\/kilo(\/|\\)kilo\.json$/);
+    expect(slash(resolveConfigPath(kilo!, "global", cwd)!)).toContain("/Code/User/globalStorage/kilocode.kilo-code/settings/mcp_settings.json");
     expect(slash(resolveConfigPath(roo!, "global", cwd)!)).toContain("/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json");
     expect(slash(resolveConfigPath(kiro!, "global", cwd)!)).toMatch(/\.kiro\/settings\/mcp\.json$/);
   });

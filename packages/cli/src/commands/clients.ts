@@ -269,9 +269,9 @@ export const CLIENT_REGISTRY: McpClient[] = [
     rootKey: "mcpServers",
     scopes: {
       workspace: { pathTemplate: ".kilocode/mcp.json", absolute: false },
-      global: { 
-        pathTemplate: path.join(home(), ".config", "kilo", "kilo.json"), 
-        absolute: true 
+      global: {
+        pathTemplate: vscodeExtensionStoragePath("kilocode.kilo-code"),
+        absolute: true,
       },
     },
     detectBinaries: [],
