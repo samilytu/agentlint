@@ -396,6 +396,7 @@ describe("zero clients detected — empty workspace", () => {
           { timeoutMs: 5_000 },
         );
 
+        await sleep(100);
         pressEnter(session.stdin);
 
         await waitFor(
@@ -463,6 +464,7 @@ describe("zero clients detected — empty workspace", () => {
           { timeoutMs: 5_000 },
         );
 
+        await sleep(100);
         pressEnter(session.stdin);
         await waitFor(
           () =>
