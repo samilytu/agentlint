@@ -1,5 +1,23 @@
 # @agent-lint/cli Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 8ccf257: Rename the workspace scan command to `scan`.
+
+  **BREAKING CHANGE:** the workspace scan command is now `agent-lint scan`. All flags (`--stdout`, `--json`, `--save-report`) work the same way. The command scans the workspace for missing, incomplete, stale, conflicting, and weak context artifacts and generates a maintenance report.
+
+  Update scripts or CI pipelines to use `agent-lint scan`.
+
+### Patch Changes
+
+- fe317c7: Fix MCP client config installation edge cases across supported editors.
+
+  - preserve project-local Codex installs by keeping `.codex/config.toml` as the workspace target
+  - update Kilo Code global installs to use the VS Code global storage MCP settings path
+  - treat empty existing JSON and TOML config files as mergeable instead of failing setup
+
 ## 0.7.0
 
 ### Minor Changes
